@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear ClickView Storage</title>
+</head>
+<body>
+    <h1>Clear ClickView Storage</h1>
+    <p>This page will clear the cached workspace data.</p>
+    <button onclick="clearStorage()">Clear Storage and Reload</button>
+    
+    <script>
+        function clearStorage() {
+            // Clear the entire localStorage for the app
+            localStorage.removeItem('clickview-storage');
+            alert('Storage cleared! The page will now reload.');
+            // Redirect to the app
+            window.location.href = 'http://localhost:3000/workspaces';
+        }
+        
+        // Auto-clear on page load
+        if (confirm('Clear ClickView storage and redirect to app?')) {
+            clearStorage();
+        }
+    </script>
+</body>
+</html>

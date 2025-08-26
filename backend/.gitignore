@@ -1,0 +1,75 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables - CRITICAL: Contains passwords and API keys
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Build output
+dist/
+build/
+*.js
+*.js.map
+*.d.ts
+!src/**/*.js
+!src/**/*.d.ts
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Backup files
+*.bak
+*.backup
+
+# Sensitive files
+*.key
+*.pem
+*.cert
+*.crt
+private/
+secrets/
+
+# Scripts that might contain credentials
+scripts/
+create-completion-dashboard.ts
+sync-all-tasks.ts
+*-credentials.ts
+*-secrets.ts
