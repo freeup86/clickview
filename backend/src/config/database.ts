@@ -2,8 +2,8 @@ import { Pool, PoolConfig } from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load environment variables from parent directory
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
+// Load environment variables
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 // For Aiven PostgreSQL with self-signed certificates
 // Note: In production, you should use proper certificate verification
@@ -11,13 +11,17 @@ if (process.env.NODE_ENV !== 'production') {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 }
 
-// For Aiven PostgreSQL, we need to handle SSL properly
+// Configure database connection
 const poolConfig: PoolConfig = {
   connectionString: process.env.DATABASE_URL,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
-  ssl: true  // Simple SSL flag for Aiven
+  ssl: process.env.DATABASE_URL?.includes('aivencloud.com') 
+    ? { rejectUnauthorized: false } // For Aiven cloud
+    : process.env.DATABASE_URL?.includes('sslmode=disable') 
+    ? false 
+    : process.env.NODE_ENV === 'production'
 };
 
 export const pool = new Pool(poolConfig);

@@ -46,6 +46,33 @@ router.post('/', async (req: Request, res: Response) => {
 // Get dashboards with pagination
 router.get('/', async (req: Request, res: Response) => {
   try {
+    // Mock mode for development without database
+    if (process.env.USE_MOCK_DATA === 'true') {
+      return res.json({
+        success: true,
+        dashboards: [
+          {
+            id: '660e8400-e29b-41d4-a716-446655440001',
+            workspace_id: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Sample Dashboard',
+            description: 'A sample dashboard to get you started',
+            layout_config: [],
+            global_filters: {},
+            refresh_interval: null,
+            is_template: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        ],
+        pagination: {
+          page: 1,
+          limit: 10,
+          totalCount: 1,
+          totalPages: 1
+        }
+      });
+    }
+
     const { error, value } = paginationSchema.validate(req.query);
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
@@ -103,6 +130,29 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+
+    // Mock mode for development without database
+    if (process.env.USE_MOCK_DATA === 'true') {
+      if (id === '660e8400-e29b-41d4-a716-446655440001') {
+        return res.json({
+          success: true,
+          dashboard: {
+            id: '660e8400-e29b-41d4-a716-446655440001',
+            workspace_id: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Sample Dashboard',
+            description: 'A sample dashboard to get you started',
+            layout_config: [],
+            global_filters: {},
+            refresh_interval: null,
+            is_template: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            widgets: []
+          }
+        });
+      }
+      return res.status(404).json({ error: 'Dashboard not found' });
+    }
 
     // Get dashboard
     const dashboardResult = await query(

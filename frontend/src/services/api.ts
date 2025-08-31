@@ -209,11 +209,15 @@ class ApiService {
   async getTasks(params: {
     workspaceId: string;
     listId?: string;
-    filters?: any[];
+    spaceId?: string;
+    status?: string;
+    assignee?: string;
+    filters?: any;
     startDate?: string;
     endDate?: string;
     limit?: number;
     offset?: number;
+    page?: number;
   }) {
     const response = await this.instance.get('/data/tasks', { params });
     return response.data;
@@ -252,19 +256,6 @@ class ApiService {
     return response.data;
   }
 
-  // Tasks endpoints
-  async getTasks(params: {
-    workspaceId: string;
-    listId?: string;
-    spaceId?: string;
-    status?: string;
-    assignee?: string;
-    limit?: number;
-    offset?: number;
-  }) {
-    const response = await this.instance.get('/tasks', { params });
-    return response.data;
-  }
 
   async uploadTasks(formData: FormData) {
     const response = await this.instance.post('/tasks/upload', formData, {

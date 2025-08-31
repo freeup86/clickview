@@ -61,6 +61,24 @@ router.post('/', async (req: Request, res: Response) => {
 // Get all workspaces
 router.get('/', async (req: Request, res: Response) => {
   try {
+    // Mock mode for development without database
+    if (process.env.USE_MOCK_DATA === 'true') {
+      return res.json({
+        success: true,
+        workspaces: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            name: 'Demo Workspace',
+            clickup_team_id: 'demo_team_1',
+            is_active: true,
+            last_sync_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        ]
+      });
+    }
+
     const result = await query(
       `SELECT id, name, clickup_team_id, is_active, last_sync_at, created_at, updated_at
        FROM workspaces

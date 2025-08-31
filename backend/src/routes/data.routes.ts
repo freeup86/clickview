@@ -251,6 +251,75 @@ router.get('/aggregate', async (req: Request, res: Response) => {
           return 0;
         });
       }
+    } else if (aggregationType === 'none') {
+      // Return raw data without aggregation for drill-down
+      logger.info('Processing drill-down request with aggregationType: none', {
+        filters,
+        rawDataCount: rawData.length
+      });
+      
+      // Since we want raw data, not aggregated, we need to apply filters manually
+      // but return the raw data structure
+      if (filters) {
+        // Apply filters using DataAggregationService's internal logic
+        let result = [...rawData];
+        
+        // Import the filter logic from DataAggregationService
+        const { getDateRangeFromFilter } = require('../utils/date-helpers');
+        
+        // Apply date range filter if present
+        if (filters.dateRange) {
+          const { startDate, endDate } = getDateRangeFromFilter(filters.dateRange);
+          result = result.filter((item: any) => {
+            const itemDate = item.date_done || item.date_created || item.due_date;
+            if (!itemDate) return false;
+            const date = new Date(itemDate);
+            return date >= startDate && date <= endDate;
+          });
+          logger.info(`Date range filter applied: ${result.length} tasks remaining`);
+        }
+        
+        // Apply status filter
+        if (filters.status && Array.isArray(filters.status) && filters.status.length > 0) {
+          result = result.filter((item: any) => {
+            const itemStatus = item.status?.status || item.status;
+            return filters.status.includes(itemStatus);
+          });
+          logger.info(`Status filter applied: ${result.length} tasks remaining`);
+        }
+        
+        // Apply priority filter
+        if (filters.priority && Array.isArray(filters.priority) && filters.priority.length > 0) {
+          result = result.filter((item: any) => {
+            const itemPriority = item.priority?.priority || item.priority;
+            return filters.priority.includes(itemPriority);
+          });
+          logger.info(`Priority filter applied: ${result.length} tasks remaining`);
+        }
+        
+        // Apply assignee filter
+        if (filters.assignees && Array.isArray(filters.assignees) && filters.assignees.length > 0) {
+          result = result.filter((item: any) => {
+            const assigneeUsernames = item.assignees?.map((a: any) => a.username) || [];
+            return filters.assignees.some((a: string) => assigneeUsernames.includes(a));
+          });
+          logger.info(`Assignee filter applied: ${result.length} tasks remaining`);
+        }
+        
+        logger.info(`Returning ${result.length} filtered tasks`);
+        if (result.length > 0) {
+          logger.info('Sample task:', {
+            id: result[0].id,
+            name: result[0].name,
+            status: result[0].status
+          });
+        }
+        aggregatedData = result;
+      } else {
+        // No filters, return all raw data
+        logger.info(`Returning all ${rawData.length} tasks (no filters)`);
+        aggregatedData = rawData;
+      }
     } else {
       // Standard aggregation
       aggregatedData = DataAggregationService.aggregate({

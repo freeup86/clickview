@@ -4,6 +4,8 @@ import apiService from '../../services/api';
 import LoadingSpinner from '../LoadingSpinner';
 import KPICard from './KPICard';
 import BarChart from './BarChart';
+import StackedBarChart from './StackedBarChart';
+import DonutChart from './DonutChart';
 import LineChart from './LineChart';
 import PieChart from './PieChart';
 import AreaChart from './AreaChart';
@@ -13,6 +15,7 @@ import HeatMap from './HeatMap';
 import GanttChart from './GanttChart';
 import BurndownChart from './BurndownChart';
 import CustomFieldSummary from './CustomFieldSummary';
+import TaskDrillDownModal from './TaskDrillDownModal';
 
 interface WidgetRendererProps {
   widget: {
@@ -35,6 +38,9 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
   onChartClick,
 }) => {
   const [widgetData, setWidgetData] = useState<any>(null);
+  const [showDrillDown, setShowDrillDown] = useState(false);
+  const [drillDownFilters, setDrillDownFilters] = useState<any>(null);
+  const [drillDownTitle, setDrillDownTitle] = useState<string>('');
 
   // Helper function to clean empty filter values
   const cleanFilters = (filters: any): any => {
@@ -169,51 +175,137 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     );
   }
 
+  // Handle chart click for drill-down
+  const handleChartClick = (data: any) => {
+    if (onChartClick) {
+      onChartClick(data);
+    }
+    
+    // Set up drill-down filters based on clicked data
+    const baseFilters = {
+      ...globalFilters,
+      ...widget.filters
+    };
+    
+    // Create proper filters based on clicked segment
+    let drillFilters: any = {};
+    
+    if (data.payload) {
+      const clickedData = data.payload;
+      
+      // Handle status clicks (from donut charts)
+      if (clickedData.status || clickedData.name) {
+        const statusValue = clickedData.status || clickedData.name;
+        drillFilters.status = [statusValue]; // Status filter expects an array
+      }
+      
+      // Handle date-based clicks (from bar charts)
+      if (clickedData.group) {
+        // If it's a day of week, we need to filter by that day
+        const dayMatch = clickedData.group.match(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)$/i);
+        if (dayMatch) {
+          // For day of week, we can add a custom filter or just show all tasks
+          // Since the backend doesn't support day-of-week filtering directly,
+          // we'll show all tasks from that period
+          drillFilters.dateRange = 'current_week';
+        } else if (clickedData.group.includes('Week')) {
+          // Handle week-based filtering
+          drillFilters.dateRange = 'current_week';
+        }
+      }
+      
+      // Handle priority clicks
+      if (clickedData.priority) {
+        drillFilters.priority = [clickedData.priority];
+      }
+      
+      // Handle assignee clicks
+      if (clickedData.assignee) {
+        drillFilters.assignees = [clickedData.assignee];
+      }
+    }
+    
+    // Merge with base filters but only include valid filter fields
+    const finalFilters = {
+      ...baseFilters,
+      ...drillFilters
+    };
+    
+    // Remove any invalid fields that the backend doesn't accept
+    delete finalFilters.group;
+    
+    setDrillDownFilters(finalFilters);
+    setDrillDownTitle(`${widget.title} - ${data.payload?.group || data.payload?.name || 'Details'}`);
+    setShowDrillDown(true);
+  };
+
   // Render appropriate widget based on type
-  switch (widget.type) {
-    case 'kpi_card':
-      return <KPICard data={widgetData} config={widget.config} />;
-    
-    case 'bar_chart':
-      return <BarChart data={widgetData} config={widget.config} onClick={onChartClick} />;
-    
-    case 'line_chart':
-      return <LineChart data={widgetData} config={widget.config} />;
-    
-    case 'pie_chart':
-      return <PieChart data={widgetData} config={widget.config} />;
-    
-    case 'donut_chart':
-      return <PieChart data={widgetData} config={{ ...widget.config, innerRadius: 60 }} />;
-    
-    case 'area_chart':
-      return <AreaChart data={widgetData} config={widget.config} />;
-    
-    case 'data_table':
-      return <DataTable data={widgetData} config={widget.config} />;
-    
-    case 'progress_bar':
-      return <ProgressBar data={widgetData} config={widget.config} />;
-    
-    case 'heatmap':
-      return <HeatMap data={widgetData} config={widget.config} />;
-    
-    case 'gantt_chart':
-      return <GanttChart data={widgetData} config={widget.config} />;
-    
-    case 'burndown_chart':
-      return <BurndownChart data={widgetData} config={widget.config} />;
-    
-    case 'custom_field_summary':
-      return <CustomFieldSummary data={widgetData} config={widget.config} />;
-    
-    default:
-      return (
-        <div className="flex items-center justify-center h-full text-gray-500">
-          Unsupported widget type: {widget.type}
-        </div>
-      );
-  }
+  return (
+    <>
+      {(() => {
+        switch (widget.type) {
+          case 'kpi_card':
+            return <KPICard data={widgetData} config={widget.config} />;
+          
+          case 'bar_chart':
+            return <BarChart data={widgetData} config={widget.config} onClick={handleChartClick} />;
+          
+          case 'stacked_bar_chart':
+            return <StackedBarChart data={widgetData} config={widget.config} onClick={handleChartClick} />;
+          
+          case 'line_chart':
+            return <LineChart data={widgetData} config={widget.config} />;
+          
+          case 'pie_chart':
+            return <PieChart data={widgetData} config={widget.config} />;
+          
+          case 'donut_chart':
+            return <DonutChart data={widgetData} config={widget.config} onClick={handleChartClick} />;
+          
+          case 'area_chart':
+            return <AreaChart data={widgetData} config={widget.config} />;
+          
+          case 'data_table':
+            return <DataTable data={widgetData} config={widget.config} />;
+          
+          case 'progress_bar':
+            return <ProgressBar data={widgetData} config={widget.config} />;
+          
+          case 'heatmap':
+            return <HeatMap data={widgetData} config={widget.config} />;
+          
+          case 'gantt_chart':
+            return <GanttChart data={widgetData} config={widget.config} />;
+          
+          case 'burndown_chart':
+            return <BurndownChart data={widgetData} config={widget.config} />;
+          
+          case 'custom_field_summary':
+            return <CustomFieldSummary data={widgetData} config={widget.config} />;
+          
+          default:
+            return (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                Unsupported widget type: {widget.type}
+              </div>
+            );
+        }
+      })()}
+      
+      {/* Drill-down modal */}
+      {workspaceId && (
+        <TaskDrillDownModal
+          isOpen={showDrillDown}
+          onClose={() => setShowDrillDown(false)}
+          filters={drillDownFilters}
+          workspaceId={workspaceId}
+          title={drillDownTitle}
+          listId={widget.data_config?.listId}
+          spaceId={widget.data_config?.spaceId}
+        />
+      )}
+    </>
+  );
 };
 
 export default WidgetRenderer;
