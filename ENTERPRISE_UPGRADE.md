@@ -194,19 +194,65 @@ This document tracks the ongoing transformation of ClickView from a basic dashbo
 
 ### Phase 2: Architecture Upgrade
 
-#### ARCH-001: Migrate to Next.js 14
-- App Router implementation
-- Server-side rendering (SSR)
-- Static site generation (SSG)
-- API routes migration
-- Image optimization
+#### ARCH-001: Next.js 14 Migration (PLANNED - Deferred)
+- **Status**: Comprehensive migration plan created
+- **Documentation**: ARCH001_NEXTJS_MIGRATION_PLAN.md
+- **Decision**: Deferred until after visualization engine
+- **Rationale**: Backend improvements provide more immediate value
+- See migration plan for full implementation details
 
-#### ARCH-002: GraphQL API
-- Apollo Server setup
-- Schema definition
-- Resolvers for all resources
-- Real-time subscriptions
-- Query optimization
+#### ARCH-002: GraphQL API (COMPLETED ✅)
+**Backend Implementation (COMPLETED)**:
+- ✅ Complete GraphQL Schema (600 lines)
+  - 60+ types (User, Organization, Workspace, Dashboard, Widget, etc.)
+  - 30+ queries with filtering, pagination, search
+  - 25+ mutations for CRUD operations
+  - 5 subscriptions for real-time updates
+  - Custom scalars (DateTime, JSON, Upload)
+  - Enums for all domain concepts
+- ✅ Comprehensive Resolvers (900 lines)
+  - Query resolvers for all resources
+  - Mutation resolvers with authorization
+  - Subscription resolvers with PubSub
+  - Field resolvers for computed fields
+  - Nested relationship resolution
+- ✅ DataLoader Integration
+  - N+1 query prevention
+  - Automatic batching and caching
+  - 4 loaders (user, workspace, dashboard, organization)
+  - Per-request cache optimization
+- ✅ Apollo Server Setup (130 lines)
+  - Express middleware integration
+  - WebSocket support (graphql-ws)
+  - Authentication context builder
+  - Error formatting and monitoring
+  - Slow query detection (>1s)
+- ✅ Real-time Subscriptions
+  - WebSocket server configuration
+  - PubSub for event publishing
+  - Per-client subscription management
+  - Authentication on WebSocket connections
+- ✅ GraphQL Playground
+  - Interactive API explorer
+  - Example queries and mutations
+  - Subscription testing interface
+  - Available at `/playground` (dev only)
+- ✅ Authorization Integration
+  - JWT token validation
+  - Permission checks on mutations
+  - Integration with AuthorizationService
+  - Resource-level security
+- ✅ Integrated into Express app
+- **Code Statistics**:
+  - Schema: 600 lines
+  - Resolvers: 900 lines
+  - Server setup: 130 lines
+  - **Total: ~1,630 lines**
+- **Dependencies**: @apollo/server, graphql, graphql-subscriptions, graphql-ws, dataloader
+- **Endpoints**:
+  - GraphQL API: `/graphql`
+  - Playground: `/playground` (dev)
+  - Subscriptions: `ws://localhost:3001/graphql`
 
 #### ARCH-003: TimescaleDB Extension
 - Time-series hypertables
