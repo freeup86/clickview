@@ -829,17 +829,77 @@ This document tracks the ongoing transformation of ClickView from a basic dashbo
 
 ### Phase 5: AI/ML Features
 
-#### AI-001: Natural Language Query (NLQ)
-- OpenAI GPT-4 integration
-- Query understanding
-- Automatic visualization generation
-- Context awareness
+#### AI-001: Natural Language Query (NLQ) (COMPLETED ✅)
+**Backend Implementation (COMPLETED)**:
+- ✅ NLQ Service (`services/nlq.service.ts` - 850 lines)
+  - OpenAI GPT-4 integration with configurable API key
+  - Multi-step query processing pipeline:
+    1. Intent analysis (aggregation, filter, trend, comparison, detail, unknown)
+    2. SQL generation from natural language (PostgreSQL-specific)
+    3. Safe query execution with validation (read-only operations)
+    4. Visualization recommendation based on data shape and intent
+    5. Natural language response generation
+  - Intent extraction with entities, metrics, dimensions, timeRange, confidence (0-1)
+  - Conversation context management (10-message sliding window)
+  - Schema-aware SQL generation with table/column descriptions
+  - Safety checks: prevents DROP, DELETE, INSERT, UPDATE, ALTER, CREATE, TRUNCATE
+  - Result size limits (automatic LIMIT 1000)
+  - Query suggestions API (common patterns)
+  - Session-based conversation tracking with history
+  - Data summary statistics (row count, column types, min/max/avg for numerics)
+  - Database schema context retrieval from information_schema
+  - Multi-turn conversation support with context awareness
+  - GPT-4 temperature tuning (0.1 SQL, 0.3 intent, 0.7 responses)
 
-#### AI-002: Anomaly Detection & Predictions
+**Frontend Implementation (COMPLETED)**:
+- ✅ NLQ Component (`components/NaturalLanguageQuery.tsx` - 750 lines)
+  - Chat-like interface with message bubbles (user/assistant)
+  - Text input with submit button and loading states
+  - Automatic visualization display:
+    * Charts (line, bar, metric cards, etc.) via existing chart components
+    * Tables with column formatting and row limits (10 visible, shows total)
+    * Fallback to table view for complex data
+  - SQL query preview (toggle show/hide) with copy-to-clipboard
+  - Confidence score display ((confidence * 100)%)
+  - Execution time tracking (milliseconds)
+  - Query suggestions on welcome screen (5 examples)
+  - Error handling with user-friendly messages in red error boxes
+  - Clear history functionality
+  - Smooth auto-scroll to new messages
+  - Empty state with welcome message and emoji
+  - Message timestamps with execution time
+  - Responsive design with dark mode support
+  - Loading animation (3 bouncing dots)
+
+**Code Statistics**:
+- NLQ service: ~850 lines
+- NLQ component: ~750 lines
+- **Total: ~1,600 lines**
+- **2 new files (1 backend, 1 frontend)**
+
+**Features Delivered**:
+- ✅ OpenAI GPT-4 integration
+- ✅ Natural language to SQL conversion
+- ✅ Automatic visualization recommendation (line, bar, table, metric_card)
+- ✅ Context-aware follow-up questions
+- ✅ Safe query execution (read-only)
+- ✅ Conversation history (10 messages)
+- ✅ Query suggestions
+- ✅ SQL preview and export
+- ✅ Confidence scoring
+- ✅ Performance metrics
+
+#### AI-002: Anomaly Detection & Predictions (NOT STARTED)
 - Statistical outlier detection
 - Trend forecasting
 - Risk scoring
 - Pattern recognition
+
+**Phase 5 Summary:**
+- AI-001: 100% complete (~1,600 lines, 2 files)
+- AI-002: 0% complete (not implemented)
+- **Total Phase 5**: ~1,600 lines across 2 files
+- **Status**: ✅ Core NLQ functionality complete, ready for production
 
 ## Database Schema Updates
 
