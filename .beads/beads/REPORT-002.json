@@ -1,0 +1,15 @@
+{
+  "id": "REPORT-002",
+  "title": "Implement scheduling and automated distribution",
+  "description": "Build cron-based scheduler with email, Slack, Teams, SFTP distribution in multiple formats (PDF, Excel, PowerPoint).",
+  "status": "open",
+  "priority": "high",
+  "category": "reporting",
+  "assignee": "backend-team",
+  "dependencies": ["REPORT-001"],
+  "estimate": 32,
+  "actual": 0,
+  "tags": ["scheduling", "automation", "distribution"],
+  "created": "2025-11-21T00:00:00Z",
+  "updated": "2025-11-21T00:00:00Z"
+}

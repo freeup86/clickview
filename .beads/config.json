@@ -1,0 +1,29 @@
+{
+  "project": "ClickView Enterprise",
+  "version": "2.0.0-enterprise",
+  "beadsDirectory": ".beads/beads",
+  "categories": {
+    "SEC": "Security & Compliance",
+    "AUTH": "Authentication & Authorization",
+    "ARCH": "Architecture & Infrastructure",
+    "API": "Backend API Development",
+    "UI": "Frontend User Interface",
+    "VIZ": "Data Visualization",
+    "DRILL": "Drill-Down Features",
+    "REPORT": "Enterprise Reporting",
+    "AI": "AI/ML Features",
+    "PERF": "Performance Optimization",
+    "TEST": "Testing & Quality",
+    "DOC": "Documentation",
+    "OPS": "DevOps & Deployment"
+  },
+  "priorities": ["critical", "high", "medium", "low"],
+  "statuses": ["open", "in-progress", "review", "done", "blocked"],
+  "teams": {
+    "security": ["SEC", "AUTH"],
+    "backend": ["ARCH", "API", "PERF"],
+    "frontend": ["UI", "VIZ", "DRILL"],
+    "platform": ["REPORT", "AI", "OPS"],
+    "quality": ["TEST", "DOC"]
+  }
+}

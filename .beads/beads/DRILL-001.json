@@ -1,0 +1,15 @@
+{
+  "id": "DRILL-001",
+  "title": "Implement multi-level drill-down system",
+  "description": "Build context-aware drill-down with breadcrumb navigation, state preservation, and cross-dashboard drilling.",
+  "status": "open",
+  "priority": "high",
+  "category": "drill-down",
+  "assignee": "frontend-team",
+  "dependencies": ["VIZ-001", "ARCH-002"],
+  "estimate": 40,
+  "actual": 0,
+  "tags": ["drill-down", "navigation", "ux"],
+  "created": "2025-11-21T00:00:00Z",
+  "updated": "2025-11-21T00:00:00Z"
+}

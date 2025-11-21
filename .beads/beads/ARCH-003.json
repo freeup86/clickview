@@ -1,0 +1,15 @@
+{
+  "id": "ARCH-003",
+  "title": "Add TimescaleDB extension for time-series data",
+  "description": "Implement TimescaleDB for efficient time-series analytics and better performance on historical data queries.",
+  "status": "open",
+  "priority": "high",
+  "category": "architecture",
+  "assignee": "backend-team",
+  "dependencies": [],
+  "estimate": 16,
+  "actual": 0,
+  "tags": ["database", "timeseries", "performance"],
+  "created": "2025-11-21T00:00:00Z",
+  "updated": "2025-11-21T00:00:00Z"
+}

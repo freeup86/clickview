@@ -11,6 +11,7 @@ import { Server } from 'socket.io';
 dotenv.config();
 
 // Import routes
+import authRoutes from './routes/auth.routes';
 import workspaceRoutes from './routes/workspace.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import widgetRoutes from './routes/widget.routes';
@@ -72,6 +73,7 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // API Routes
+app.use('/api/auth', authRoutes); // Enterprise authentication (public + protected)
 app.use('/api/workspaces', workspaceRoutes);
 app.use('/api/dashboards', dashboardRoutes);
 app.use('/api/widgets', widgetRoutes);

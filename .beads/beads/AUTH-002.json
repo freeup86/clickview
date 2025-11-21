@@ -1,0 +1,23 @@
+{
+  "id": "AUTH-002",
+  "title": "Implement RBAC and ABAC authorization",
+  "description": "Build role-based and attribute-based access control with row-level and column-level security.",
+  "status": "open",
+  "priority": "high",
+  "category": "authorization",
+  "assignee": "backend-team",
+  "dependencies": ["AUTH-001"],
+  "estimate": 32,
+  "actual": 0,
+  "tags": ["authorization", "rbac", "abac", "security"],
+  "created": "2025-11-21T00:00:00Z",
+  "updated": "2025-11-21T00:00:00Z",
+  "notes": [
+    "Define roles: admin, manager, analyst, viewer",
+    "Implement permissions matrix",
+    "Row-level security for multi-tenancy",
+    "Column-level security for sensitive data",
+    "Dynamic data masking",
+    "Policy engine for attribute-based rules"
+  ]
+}
