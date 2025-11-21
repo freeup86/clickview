@@ -1,0 +1,12 @@
+{
+  "id": "SEC-002",
+  "title": "Fix TLS certificate verification issues",
+  "status": "done",
+  "priority": "critical",
+  "category": "security",
+  "assignee": "security-team",
+  "dependencies": [],
+  "estimate": 3,
+  "actual": 2,
+  "completed_at": "2025-11-21T00:45:00Z"
+}

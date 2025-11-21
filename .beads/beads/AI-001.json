@@ -1,0 +1,15 @@
+{
+  "id": "AI-001",
+  "title": "Implement natural language query (NLQ) interface",
+  "description": "Build NLQ system that converts plain English queries into visualizations using OpenAI GPT-4.",
+  "status": "open",
+  "priority": "medium",
+  "category": "ai",
+  "assignee": "platform-team",
+  "dependencies": ["ARCH-002", "VIZ-001"],
+  "estimate": 48,
+  "actual": 0,
+  "tags": ["ai", "nlp", "nlq"],
+  "created": "2025-11-21T00:00:00Z",
+  "updated": "2025-11-21T00:00:00Z"
+}

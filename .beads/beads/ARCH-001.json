@@ -1,0 +1,15 @@
+{
+  "id": "ARCH-001",
+  "title": "Migrate to Next.js 14 with App Router",
+  "description": "Upgrade frontend from Vite/React to Next.js 14 with App Router for SSR/SSG capabilities and better SEO.",
+  "status": "open",
+  "priority": "high",
+  "category": "architecture",
+  "assignee": "frontend-team",
+  "dependencies": ["AUTH-001"],
+  "estimate": 24,
+  "actual": 0,
+  "tags": ["nextjs", "ssr", "migration"],
+  "created": "2025-11-21T00:00:00Z",
+  "updated": "2025-11-21T00:00:00Z"
+}

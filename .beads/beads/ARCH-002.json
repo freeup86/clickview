@@ -1,0 +1,15 @@
+{
+  "id": "ARCH-002",
+  "title": "Implement GraphQL API with Apollo Server",
+  "description": "Add GraphQL layer for flexible querying, real-time subscriptions, and better frontend data management.",
+  "status": "open",
+  "priority": "high",
+  "category": "architecture",
+  "assignee": "backend-team",
+  "dependencies": ["AUTH-002"],
+  "estimate": 32,
+  "actual": 0,
+  "tags": ["graphql", "apollo", "api"],
+  "created": "2025-11-21T00:00:00Z",
+  "updated": "2025-11-21T00:00:00Z"
+}

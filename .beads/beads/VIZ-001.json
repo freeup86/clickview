@@ -1,0 +1,15 @@
+{
+  "id": "VIZ-001",
+  "title": "Build advanced visualization engine with D3.js",
+  "description": "Implement 50+ chart types including statistical, hierarchical, geospatial, and network visualizations.",
+  "status": "open",
+  "priority": "high",
+  "category": "visualization",
+  "assignee": "frontend-team",
+  "dependencies": ["ARCH-001"],
+  "estimate": 80,
+  "actual": 0,
+  "tags": ["d3", "charts", "visualization"],
+  "created": "2025-11-21T00:00:00Z",
+  "updated": "2025-11-21T00:00:00Z"
+}

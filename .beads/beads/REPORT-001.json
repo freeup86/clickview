@@ -1,0 +1,15 @@
+{
+  "id": "REPORT-001",
+  "title": "Build enterprise report builder with drag-drop interface",
+  "description": "Create pixel-perfect report builder with templates for executive, operational, financial, and compliance reports.",
+  "status": "open",
+  "priority": "high",
+  "category": "reporting",
+  "assignee": "platform-team",
+  "dependencies": ["VIZ-001", "DRILL-001"],
+  "estimate": 60,
+  "actual": 0,
+  "tags": ["reporting", "builder", "enterprise"],
+  "created": "2025-11-21T00:00:00Z",
+  "updated": "2025-11-21T00:00:00Z"
+}

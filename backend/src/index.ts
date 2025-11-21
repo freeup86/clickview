@@ -11,6 +11,8 @@ import { Server } from 'socket.io';
 dotenv.config();
 
 // Import routes
+import authRoutes from './routes/auth.routes';
+import authorizationRoutes from './routes/authorization.routes';
 import workspaceRoutes from './routes/workspace.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import widgetRoutes from './routes/widget.routes';
@@ -23,6 +25,9 @@ import tasksSyncRoutes from './routes/tasks.sync.routes';
 import { logger, requestLogger } from './config/logger';
 import { pool } from './config/database';
 import { cacheService } from './services/cache.service';
+
+// Import GraphQL
+import { createApolloServer, graphqlPlaygroundHTML } from './graphql/server';
 
 const app: Express = express();
 const httpServer = createServer(app);
@@ -72,6 +77,8 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // API Routes
+app.use('/api/auth', authRoutes); // Enterprise authentication (public + protected)
+app.use('/api/authorization', authorizationRoutes); // Advanced authorization (RBAC/ABAC)
 app.use('/api/workspaces', workspaceRoutes);
 app.use('/api/dashboards', dashboardRoutes);
 app.use('/api/widgets', widgetRoutes);
@@ -172,17 +179,44 @@ setInterval(async () => {
   }
 }, 5 * 60 * 1000); // Every 5 minutes
 
-// Start server
-const PORT = process.env.PORT || 3001;
-httpServer.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`);
-  console.log(`
+// GraphQL Playground (development only)
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/playground', (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.send(graphqlPlaygroundHTML);
+  });
+}
+
+// Initialize GraphQL Server
+let apolloServer: any;
+
+async function startServer() {
+  try {
+    // Initialize Apollo GraphQL Server
+    apolloServer = await createApolloServer(app, httpServer);
+
+    // Start HTTP server
+    const PORT = process.env.PORT || 3001;
+    httpServer.listen(PORT, () => {
+      logger.info(`Server running on port ${PORT}`);
+      console.log(`
     🚀 ClickView Backend Server
     ============================
     Environment: ${process.env.NODE_ENV || 'development'}
     Port: ${PORT}
-    API URL: http://localhost:${PORT}
-    WebSocket: ws://localhost:${PORT}
+    REST API: http://localhost:${PORT}/api
+    GraphQL API: http://localhost:${PORT}/graphql
+    GraphQL Playground: http://localhost:${PORT}/playground
+    WebSocket (Socket.io): ws://localhost:${PORT}
+    WebSocket (GraphQL): ws://localhost:${PORT}/graphql
     ============================
-  `);
-});
+      `);
+    });
+  } catch (error) {
+    logger.error('Failed to start server', error);
+    process.exit(1);
+  }
+}
+
+// Start the server
+startServer();

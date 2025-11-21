@@ -1,21 +1,35 @@
 import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { 
-  ChartBarIcon, 
-  ViewGridIcon, 
-  CogIcon, 
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  ChartBarIcon,
+  ViewGridIcon,
+  CogIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   RefreshIcon,
   PlusIcon,
   ClipboardListIcon
 } from './icons';
+import { useAuth } from '../contexts/AuthContext';
 import useStore from '../store/useStore';
 import WorkspaceSelector from './WorkspaceSelector';
+import toast from 'react-hot-toast';
 
 const Layout: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { sidebarOpen, setSidebarOpen, currentWorkspace } = useStore();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success('Logged out successfully');
+      navigate('/login');
+    } catch (error) {
+      toast.error('Logout failed');
+    }
+  };
 
   const navigation = [
     { name: 'Workspaces', href: '/workspaces', icon: ViewGridIcon },
@@ -87,12 +101,42 @@ const Layout: React.FC = () => {
           </ul>
         </nav>
 
-        {/* Footer */}
+        {/* Footer - User Info */}
         {sidebarOpen && (
           <div className="p-4 border-t">
+            {user && (
+              <div className="mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                    <span className="text-primary-600 font-semibold text-sm">
+                      {user.firstName?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                      {user.lastName?.charAt(0) || ''}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {user.firstName && user.lastName
+                        ? `${user.firstName} ${user.lastName}`
+                        : user.username
+                      }
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="mt-3 w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
             <div className="text-xs text-gray-500">
-              <p>© 2024 ClickView</p>
-              <p className="mt-1">Version 1.0.0</p>
+              <p>© 2024 ClickView Enterprise</p>
+              <p className="mt-1">Version 2.0.0</p>
             </div>
           </div>
         )}
