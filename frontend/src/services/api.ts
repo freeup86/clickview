@@ -22,7 +22,11 @@ class ApiService {
     // Request interceptor
     this.instance.interceptors.request.use(
       (config) => {
-        // Add any auth headers here if needed
+        // Add auth token to requests
+        const token = localStorage.getItem('clickview_token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
         return config;
       },
       (error) => {
@@ -307,6 +311,117 @@ class ApiService {
     const response = await this.instance.get('/clickup/lists', {
       params: { workspaceId, spaceId }
     });
+    return response.data;
+  }
+
+  // ===================================================================
+  // AUTHENTICATION ENDPOINTS
+  // ===================================================================
+
+  async login(emailOrUsername: string, password: string) {
+    const response = await this.instance.post('/auth/login', {
+      emailOrUsername,
+      password
+    });
+    return response.data;
+  }
+
+  async register(
+    email: string,
+    username: string,
+    password: string,
+    firstName?: string,
+    lastName?: string
+  ) {
+    const response = await this.instance.post('/auth/register', {
+      email,
+      username,
+      password,
+      firstName,
+      lastName
+    });
+    return response.data;
+  }
+
+  async logout() {
+    const response = await this.instance.post('/auth/logout');
+    return response.data;
+  }
+
+  async verifyMfa(mfaToken: string, code: string) {
+    const response = await this.instance.post('/auth/mfa/verify', {
+      mfaToken,
+      code
+    });
+    return response.data;
+  }
+
+  async getCurrentUser() {
+    const response = await this.instance.get('/auth/me');
+    return response.data;
+  }
+
+  async refreshToken(refreshToken: string) {
+    const response = await this.instance.post('/auth/refresh', {
+      refreshToken
+    });
+    return response.data;
+  }
+
+  async requestPasswordReset(email: string) {
+    const response = await this.instance.post('/auth/password/reset-request', {
+      email
+    });
+    return response.data;
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const response = await this.instance.post('/auth/password/reset', {
+      token,
+      newPassword
+    });
+    return response.data;
+  }
+
+  async changePassword(currentPassword: string, newPassword: string) {
+    const response = await this.instance.post('/auth/password/change', {
+      currentPassword,
+      newPassword
+    });
+    return response.data;
+  }
+
+  async enableMfa() {
+    const response = await this.instance.post('/auth/mfa/enable');
+    return response.data;
+  }
+
+  async confirmMfa(code: string) {
+    const response = await this.instance.post('/auth/mfa/confirm', {
+      code
+    });
+    return response.data;
+  }
+
+  async disableMfa(password: string) {
+    const response = await this.instance.post('/auth/mfa/disable', {
+      password
+    });
+    return response.data;
+  }
+
+  async getSessions() {
+    const response = await this.instance.get('/auth/sessions');
+    return response.data;
+  }
+
+  async revokeSession(sessionId: string) {
+    const response = await this.instance.delete(`/auth/sessions/${sessionId}`);
+    return response.data;
+  }
+
+  async revokeAllSessions() {
+    const response = await this.instance.delete('/auth/sessions');
     return response.data;
   }
 
