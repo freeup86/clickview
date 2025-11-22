@@ -34,22 +34,62 @@ export const ScheduleMonitoringDashboard: React.FC = () => {
   const loadMonitoringData = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API calls
+      const headers = {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json',
+      };
+
       const [statsRes, executionsRes, schedulesRes] = await Promise.all([
-        fetch(`/api/schedules/stats?range=${timeRange}`),
-        fetch(`/api/schedules/executions?limit=20`),
-        fetch(`/api/schedules`),
+        fetch(`/api/schedules/stats?range=${timeRange}`, { headers }),
+        fetch(`/api/schedules/executions?limit=20`, { headers }),
+        fetch(`/api/schedules`, { headers }),
       ]);
+
+      // Check if all requests succeeded
+      if (!statsRes.ok || !executionsRes.ok || !schedulesRes.ok) {
+        throw new Error('Failed to fetch monitoring data');
+      }
 
       const statsData = await statsRes.json();
       const executionsData = await executionsRes.json();
       const schedulesData = await schedulesRes.json();
 
-      setStats(statsData);
+      // Calculate stats if not provided by API
+      const calculatedStats: MonitoringStats = statsData || {
+        totalExecutions: executionsData.length || 0,
+        executionsToday: executionsData.filter((e: any) => {
+          const today = new Date().toDateString();
+          return new Date(e.startedAt).toDateString() === today;
+        }).length || 0,
+        successfulExecutions: executionsData.filter((e: any) => e.status === 'success').length || 0,
+        failedExecutions: executionsData.filter((e: any) => e.status === 'failed').length || 0,
+        successRate: executionsData.length > 0
+          ? Math.round((executionsData.filter((e: any) => e.status === 'success').length / executionsData.length) * 100)
+          : 0,
+        avgDuration: executionsData.length > 0
+          ? executionsData.reduce((sum: number, e: any) => {
+              const duration = e.completedAt ? new Date(e.completedAt).getTime() - new Date(e.startedAt).getTime() : 0;
+              return sum + duration;
+            }, 0) / executionsData.length
+          : 0,
+      };
+
+      setStats(calculatedStats);
       setRecentExecutions(executionsData);
       setSchedules(schedulesData);
     } catch (error) {
       console.error('Failed to load monitoring data:', error);
+      // Set empty state on error
+      setStats({
+        totalExecutions: 0,
+        executionsToday: 0,
+        successfulExecutions: 0,
+        failedExecutions: 0,
+        successRate: 0,
+        avgDuration: 0,
+      });
+      setRecentExecutions([]);
+      setSchedules([]);
     } finally {
       setLoading(false);
     }
