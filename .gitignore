@@ -57,8 +57,8 @@ temp/
 *.backup
 *.bak
 
-# Package manager locks (keep one)
-package-lock.json
+# Package manager locks (commit package-lock.json for reproducible builds)
+# package-lock.json is needed for npm ci in Docker builds
 yarn.lock
 pnpm-lock.yaml
 
