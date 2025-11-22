@@ -13,6 +13,7 @@ dotenv.config();
 // Import routes
 import authRoutes from './routes/auth.routes';
 import authorizationRoutes from './routes/authorization.routes';
+import adminRoutes from './routes/admin.routes';
 import workspaceRoutes from './routes/workspace.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import widgetRoutes from './routes/widget.routes';
@@ -29,6 +30,10 @@ import { cacheService } from './services/cache.service';
 // Import GraphQL
 import { createApolloServer, graphqlPlaygroundHTML } from './graphql/server';
 
+// Import Swagger
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
+
 const app: Express = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -37,6 +42,9 @@ const io = new Server(httpServer, {
     credentials: true
   }
 });
+
+// Make pool available to routes
+app.locals.pool = pool;
 
 // Middleware
 app.use(helmet());
@@ -79,6 +87,7 @@ app.use('/api', limiter);
 // API Routes
 app.use('/api/auth', authRoutes); // Enterprise authentication (public + protected)
 app.use('/api/authorization', authorizationRoutes); // Advanced authorization (RBAC/ABAC)
+app.use('/api/admin', adminRoutes); // Admin portal endpoints (user, org, role, audit log management)
 app.use('/api/workspaces', workspaceRoutes);
 app.use('/api/dashboards', dashboardRoutes);
 app.use('/api/widgets', widgetRoutes);
@@ -86,6 +95,15 @@ app.use('/api/data', dataRoutes);
 app.use('/api/clickup', clickupRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/tasks', tasksSyncRoutes);
+
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: 'ClickView API Documentation',
+  customCss: '.swagger-ui .topbar { display: none }',
+  swaggerOptions: {
+    persistAuthorization: true,
+  },
+}));
 
 // Health check endpoint
 app.get('/health', async (req: Request, res: Response) => {
