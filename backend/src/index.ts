@@ -21,6 +21,8 @@ import dataRoutes from './routes/data.routes';
 import clickupRoutes from './routes/clickup.routes';
 import tasksRoutes from './routes/tasks.routes';
 import tasksSyncRoutes from './routes/tasks.sync.routes';
+import reportRoutes from './routes/report.routes';
+import scheduleRoutes from './routes/schedule.routes';
 
 // Import services
 import { logger, requestLogger } from './config/logger';
@@ -95,6 +97,8 @@ app.use('/api/data', dataRoutes);
 app.use('/api/clickup', clickupRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/tasks', tasksSyncRoutes);
+app.use('/api/reports', reportRoutes); // Enterprise report builder
+app.use('/api/schedules', scheduleRoutes); // Report scheduling & distribution
 
 // Swagger API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {

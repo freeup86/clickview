@@ -9,6 +9,7 @@ import { Report, ReportElement, ReportSchedule } from '../types/reports';
 import { DatabaseService } from './databaseService';
 import { QueryService } from './queryService';
 import { CacheService } from './cacheService';
+import { ExportService } from './exportService';
 
 // ===================================================================
 // REPORT BUILDER SERVICE
@@ -18,11 +19,13 @@ export class ReportBuilderService {
   private db: DatabaseService;
   private queryService: QueryService;
   private cacheService: CacheService;
+  private exportService: ExportService;
 
   constructor() {
     this.db = new DatabaseService();
     this.queryService = new QueryService();
     this.cacheService = new CacheService();
+    this.exportService = new ExportService();
   }
 
   // ===================================================================
@@ -376,9 +379,7 @@ export class ReportBuilderService {
       throw new Error('Unauthorized access to report');
     }
 
-    // TODO: Implement PDF generation
-    // Use library like puppeteer or pdfkit
-    throw new Error('PDF export not yet implemented');
+    return await this.exportService.exportToPDF(report, data);
   }
 
   /**
@@ -392,9 +393,7 @@ export class ReportBuilderService {
       throw new Error('Unauthorized access to report');
     }
 
-    // Use ExcelJS or similar library
-    // Implementation would use the frontend excelExport utility logic
-    throw new Error('Excel export not yet implemented');
+    return await this.exportService.exportToExcel(report, data);
   }
 
   // ===================================================================

@@ -12,6 +12,7 @@ import { EmailService } from './emailService';
 import { SlackService } from './slackService';
 import { TeamsService } from './teamsService';
 import { SFTPService} from './sftpService';
+import { ExportService } from './exportService';
 import cron from 'node-cron';
 
 // ===================================================================
@@ -25,6 +26,7 @@ export class ScheduleService {
   private slackService: SlackService;
   private teamsService: TeamsService;
   private sftpService: SFTPService;
+  private exportService: ExportService;
   private scheduledTasks: Map<string, cron.ScheduledTask> = new Map();
 
   constructor() {
@@ -34,6 +36,7 @@ export class ScheduleService {
     this.slackService = new SlackService();
     this.teamsService = new TeamsService();
     this.sftpService = new SFTPService();
+    this.exportService = new ExportService();
 
     // Initialize existing schedules on startup
     this.initializeSchedules();
@@ -272,21 +275,50 @@ export class ScheduleService {
   ): Promise<void> {
     switch (channel.type) {
       case 'email':
+        // Generate report file attachment
+        const attachments = [];
+        const attachmentFormat = channel.attachmentFormat || 'pdf';
+
+        if (attachmentFormat === 'pdf' || attachmentFormat === 'both') {
+          const pdfBuffer = await this.exportService.exportToPDF(report, data);
+          attachments.push({
+            filename: `${report.name}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          });
+        }
+
+        if (attachmentFormat === 'excel' || attachmentFormat === 'both') {
+          const excelBuffer = await this.exportService.exportToExcel(report, data);
+          attachments.push({
+            filename: `${report.name}.xlsx`,
+            content: excelBuffer,
+            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          });
+        }
+
         await this.emailService.send({
           to: channel.recipients || [],
           subject: channel.subject || `Report: ${report.name}`,
           body: channel.body || '',
-          attachments: [], // TODO: Generate PDF/Excel attachment
+          attachments,
         });
         break;
 
       case 'slack':
-        await this.slackService.sendMessage({
-          webhookUrl: channel.webhookUrl || '',
-          channel: channel.channel,
-          message: `Report "${report.name}" has been generated.`,
-          attachments: [], // TODO: Add report data
-        });
+        // Send rich report card with stats
+        const stats = {
+          executionTime: 0, // Would be calculated from actual execution
+          dataPoints: Object.keys(data).length,
+        };
+
+        await this.slackService.sendReportCard(
+          channel.webhookUrl || '',
+          report.name,
+          stats,
+          undefined, // reportUrl if available
+          channel.channel
+        );
         break;
 
       case 'teams':
@@ -298,7 +330,22 @@ export class ScheduleService {
         break;
 
       case 'sftp':
-        // TODO: Generate file and upload via SFTP
+        // Generate report file and upload via SFTP
+        const format = channel.format || 'pdf';
+        let fileBuffer: Buffer;
+        let fileExtension: string;
+
+        if (format === 'pdf') {
+          fileBuffer = await this.exportService.exportToPDF(report, data);
+          fileExtension = 'pdf';
+        } else {
+          fileBuffer = await this.exportService.exportToExcel(report, data);
+          fileExtension = 'xlsx';
+        }
+
+        const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, '');
+        const fileName = channel.filename || `${report.name}_${timestamp}.${fileExtension}`;
+
         await this.sftpService.upload({
           host: channel.host || '',
           port: channel.port || 22,
@@ -306,8 +353,8 @@ export class ScheduleService {
           password: channel.password,
           privateKey: channel.privateKey,
           remotePath: channel.path || '',
-          fileName: `${report.name}.pdf`,
-          data: Buffer.from(''), // TODO: Generate actual file
+          fileName,
+          data: fileBuffer,
         });
         break;
 

@@ -394,16 +394,126 @@ const ChartElementRenderer: React.FC<{ element: ChartElement; data: Record<strin
 const TableElementRenderer: React.FC<{ element: TableElement; data: Record<string, any> }> = ({ element, data }) => {
   const [sortedData, setSortedData] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-
-  // TODO: Fetch data from dataSource
-  // TODO: Apply calculated fields
-  // TODO: Apply filters
-  // TODO: Apply sorting
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Placeholder: Set some sample data
-    setSortedData([]);
-  }, [element]);
+    fetchTableData();
+  }, [element, data]);
+
+  const fetchTableData = async () => {
+    setLoading(true);
+    try {
+      let rawData: any = null;
+
+      // Fetch data from dataSource
+      if (element.dataSource) {
+        if (element.dataSource.type === 'static' && element.dataSource.data) {
+          rawData = element.dataSource.data;
+        } else if (element.dataSource.type === 'api' && element.dataSource.apiEndpoint) {
+          const response = await fetch(element.dataSource.apiEndpoint, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (response.ok) {
+            rawData = await response.json();
+          }
+        } else if (element.dataSource.type === 'query' && element.dataSource.query) {
+          const response = await fetch('/api/query', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: element.dataSource.query }),
+          });
+          if (response.ok) {
+            rawData = await response.json();
+          }
+        }
+      }
+
+      // Fallback to data prop if no dataSource
+      if (!rawData && data) {
+        rawData = data;
+      }
+
+      // Ensure data is an array
+      if (!Array.isArray(rawData)) {
+        rawData = rawData ? [rawData] : [];
+      }
+
+      // Apply calculated fields
+      if (element.calculatedFields && element.calculatedFields.length > 0) {
+        rawData = rawData.map((row: any) => {
+          const newRow = { ...row };
+          element.calculatedFields!.forEach((field) => {
+            try {
+              if (field.formula) {
+                let formula = field.formula;
+                Object.keys(row).forEach((key) => {
+                  formula = formula.replace(new RegExp(`\\b${key}\\b`, 'g'), String(row[key]));
+                });
+                try {
+                  newRow[field.name] = eval(formula);
+                } catch {
+                  newRow[field.name] = 0;
+                }
+              }
+            } catch {
+              newRow[field.name] = null;
+            }
+          });
+          return newRow;
+        });
+      }
+
+      // Apply filters
+      if (element.filters && element.filters.length > 0) {
+        rawData = rawData.filter((row: any) => {
+          return element.filters!.every((filter) => {
+            const value = row[filter.field];
+            switch (filter.operator) {
+              case 'equals':
+                return value == filter.value;
+              case 'notEquals':
+                return value != filter.value;
+              case 'greaterThan':
+                return Number(value) > Number(filter.value);
+              case 'lessThan':
+                return Number(value) < Number(filter.value);
+              case 'contains':
+                return String(value).includes(String(filter.value));
+              case 'in':
+                return Array.isArray(filter.value) && filter.value.includes(value);
+              default:
+                return true;
+            }
+          });
+        });
+      }
+
+      // Apply sorting (if configured)
+      if (element.sorting?.defaultColumn && element.sorting?.defaultOrder) {
+        const { defaultColumn, defaultOrder } = element.sorting;
+        rawData = [...rawData].sort((a, b) => {
+          const aVal = a[defaultColumn];
+          const bVal = b[defaultColumn];
+          if (aVal < bVal) return defaultOrder === 'asc' ? -1 : 1;
+          if (aVal > bVal) return defaultOrder === 'asc' ? 1 : -1;
+          return 0;
+        });
+      }
+
+      setSortedData(rawData);
+    } catch (error) {
+      console.error('Failed to fetch table data:', error);
+      setSortedData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const { pagination } = element;
   const pageSize = pagination?.pageSize || 10;
@@ -551,8 +661,19 @@ const MetricCardElementRenderer: React.FC<{ element: MetricCardElement; data: Re
   element,
   data,
 }) => {
-  // TODO: Fetch and calculate metric value
-  const metricValue = 0;
+  // Fetch and calculate metric value
+  let metricValue = 0;
+
+  if (element.dataSource) {
+    if (element.dataSource.type === 'static' && element.dataSource.data) {
+      metricValue = element.dataSource.data[element.metric.field] || 0;
+    } else if (data && data[element.metric.field] !== undefined) {
+      metricValue = data[element.metric.field];
+    }
+  } else if (data && data[element.metric.field] !== undefined) {
+    metricValue = data[element.metric.field];
+  }
+
   const comparisonValue = element.comparison?.value || 0;
   const percentChange = comparisonValue !== 0 ? ((metricValue - comparisonValue) / comparisonValue) * 100 : 0;
 
