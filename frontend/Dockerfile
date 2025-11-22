@@ -21,7 +21,7 @@ COPY . .
 # Build application with production optimizations
 # Set NODE_ENV=production only for the build step
 ENV VITE_API_URL=$VITE_API_URL
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 RUN npm run build
 
 # Stage 2: Production
