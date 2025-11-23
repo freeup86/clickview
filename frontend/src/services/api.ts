@@ -274,6 +274,45 @@ class ApiService {
     return response.data;
   }
 
+  // Calculated Field endpoints
+  async getCalculatedFields(dashboardId: string) {
+    const response = await this.instance.get(`/dashboards/${dashboardId}/calculated-fields`);
+    return response.data;
+  }
+
+  async createCalculatedField(dashboardId: string, data: {
+    name: string;
+    expression: string;
+    description?: string;
+    returnType?: 'number' | 'string' | 'date' | 'boolean';
+  }) {
+    const response = await this.instance.post(`/dashboards/${dashboardId}/calculated-fields`, data);
+    return response.data;
+  }
+
+  async updateCalculatedField(fieldId: string, data: {
+    name?: string;
+    expression?: string;
+    description?: string;
+    returnType?: 'number' | 'string' | 'date' | 'boolean';
+  }) {
+    const response = await this.instance.put(`/calculated-fields/${fieldId}`, data);
+    return response.data;
+  }
+
+  async deleteCalculatedField(fieldId: string) {
+    const response = await this.instance.delete(`/calculated-fields/${fieldId}`);
+    return response.data;
+  }
+
+  async testCalculatedField(data: {
+    expression: string;
+    sampleData: Record<string, any>;
+  }) {
+    const response = await this.instance.post('/calculated-fields/test', data);
+    return response.data;
+  }
+
   // Data endpoints
   async getTasks(params: {
     workspaceId: string;
