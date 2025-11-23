@@ -22,6 +22,14 @@ import clickupRoutes from './routes/clickup.routes';
 import tasksRoutes from './routes/tasks.routes';
 import tasksSyncRoutes from './routes/tasks.sync.routes';
 
+// Dashboard feature routes (Week 1-7 implementation)
+import dashboardTemplatesRoutes from './routes/dashboard-templates.routes';
+import calculatedFieldsRoutes from './routes/calculated-fields.routes';
+import dashboardFoldersRoutes from './routes/dashboard-folders.routes';
+import dashboardSharingRoutes from './routes/dashboard-sharing.routes';
+import dashboardCommentsRoutes from './routes/dashboard-comments.routes';
+import dashboardExportRoutes from './routes/dashboard-export.routes';
+
 // Import services
 import { logger, requestLogger } from './config/logger';
 import { pool } from './config/database';
@@ -95,6 +103,18 @@ app.use('/api/data', dataRoutes);
 app.use('/api/clickup', clickupRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/tasks', tasksSyncRoutes);
+
+// Dashboard feature routes (Week 1-7 implementation)
+app.use('/api/dashboards/templates', dashboardTemplatesRoutes); // Template gallery
+app.use('/api/dashboards', calculatedFieldsRoutes); // Calculated fields (includes /dashboards/:id/calculated-fields)
+app.use('/api/workspaces', dashboardFoldersRoutes); // Folders (includes /workspaces/:id/dashboard-folders)
+app.use('/api/dashboards/:dashboardId', dashboardSharingRoutes); // Enhanced sharing (share-links, permissions)
+app.use('/api/share-links', dashboardSharingRoutes); // Share link operations
+app.use('/api/dashboard-permissions', dashboardSharingRoutes); // Permission operations
+app.use('/api/dashboards', dashboardCommentsRoutes); // Comments (includes /dashboards/:id/comments)
+app.use('/api/dashboard-comments', dashboardCommentsRoutes); // Comment operations
+app.use('/api/dashboards', dashboardExportRoutes); // Exports (includes /dashboards/export)
+app.use('/api/exports', dashboardExportRoutes); // Export operations
 
 // Swagger API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {

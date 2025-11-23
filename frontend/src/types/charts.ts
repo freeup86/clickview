@@ -35,6 +35,7 @@ export enum ChartType {
   WATERFALL = 'waterfall',
   BULLET = 'bullet',
   GAUGE = 'gauge',
+  BATTERY = 'battery',
 
   // Heatmaps & Trees
   HEATMAP = 'heatmap',
@@ -49,11 +50,23 @@ export enum ChartType {
   TIMELINE = 'timeline',
   GANTT = 'gantt',
 
+  // Sprint/Agile Charts
+  SPRINT_VELOCITY = 'sprint_velocity',
+  SPRINT_BURNDOWN = 'sprint_burndown',
+  SPRINT_BURNUP = 'sprint_burnup',
+  CUMULATIVE_FLOW = 'cumulative_flow',
+  WORKLOAD = 'workload',
+
   // Tables & Metrics
   METRIC = 'metric',
   KPI_CARD = 'kpi_card',
   TABLE = 'table',
   PIVOT_TABLE = 'pivot_table',
+
+  // Portfolio & Management
+  PORTFOLIO = 'portfolio',
+  EMBED = 'embed',
+  AI_SUMMARY = 'ai_summary',
 
   // Geospatial
   MAP = 'map',
@@ -67,6 +80,7 @@ export enum AggregationType {
   MIN = 'min',
   MAX = 'max',
   MEDIAN = 'median',
+  RANGE = 'range',
   PERCENTILE = 'percentile',
   DISTINCT_COUNT = 'distinct_count',
   FIRST = 'first',

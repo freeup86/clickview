@@ -7,6 +7,7 @@ import WorkspacesPage from './pages/WorkspacesPage';
 import DashboardsPage from './pages/DashboardsPage';
 import DashboardPage from './pages/DashboardPage';
 import SharedDashboardPage from './pages/SharedDashboardPage';
+import TemplateGalleryPage from './pages/TemplateGalleryPage';
 import TasksPage from './pages/TasksPage';
 import SettingsPage from './pages/SettingsPage';
 import Login from './pages/Login';
@@ -65,6 +66,7 @@ function App() {
         <Route path="workspaces" element={<WorkspacesPage />} />
         <Route path="dashboards" element={<DashboardsPage />} />
         <Route path="dashboard/:id" element={<DashboardPage />} />
+        <Route path="templates" element={<TemplateGalleryPage />} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

@@ -10,7 +10,7 @@ import {
 
 export interface AggregationConfig {
   sourceData: any[];
-  aggregationType: 'sum' | 'avg' | 'count' | 'min' | 'max' | 'distinct' | 'percentage' | 'progress' | 'cumulative_count';
+  aggregationType: 'sum' | 'avg' | 'count' | 'min' | 'max' | 'range' | 'median' | 'distinct' | 'percentage' | 'progress' | 'cumulative_count';
   field?: string;
   groupBy?: string;
   timeGroupBy?: 'day' | 'week' | 'month' | 'quarter' | 'year';
@@ -417,10 +417,27 @@ export class DataAggregationService {
       
       case 'max':
         if (!field) return 0;
-        return Math.max(...data.map(item => 
+        return Math.max(...data.map(item =>
           Number(this.getNestedValue(item, field)) || -Infinity
         ));
-      
+
+      case 'range':
+        if (!field) return 0;
+        const values = data.map(item => Number(this.getNestedValue(item, field)) || 0);
+        const maxVal = Math.max(...values);
+        const minVal = Math.min(...values);
+        return maxVal - minVal;
+
+      case 'median':
+        if (!field) return 0;
+        const sortedValues = data
+          .map(item => Number(this.getNestedValue(item, field)) || 0)
+          .sort((a, b) => a - b);
+        const mid = Math.floor(sortedValues.length / 2);
+        return sortedValues.length % 2 === 0
+          ? (sortedValues[mid - 1] + sortedValues[mid]) / 2
+          : sortedValues[mid];
+
       case 'distinct':
         if (!field) return data.length;
         const uniqueValues = new Set(data.map(item => 

@@ -19,6 +19,14 @@ import AddWidgetModal from '../components/modals/AddWidgetModal';
 import WidgetConfigModal from '../components/modals/WidgetConfigModal';
 import DashboardSettingsModal from '../components/modals/DashboardSettingsModal';
 import FilterPanel from '../components/FilterPanel';
+import { ExportButton } from '../components/dashboard/ExportButton';
+import { ExportOptionsModal } from '../components/modals/ExportOptionsModal';
+import { ExportProgressBar, ExportProgress } from '../components/ExportProgressBar';
+import { DownloadManager, ExportHistoryItem } from '../components/DownloadManager';
+import { SaveAsTemplateModal } from '../components/modals/SaveAsTemplateModal';
+import { ShareDashboardModal, ShareLink } from '../components/modals/ShareDashboardModal';
+import { PermissionsManager, Permission } from '../components/PermissionsManager';
+import { DashboardComments, Comment } from '../components/dashboard/DashboardComments';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -57,6 +65,26 @@ const DashboardPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasInitiatedCreation, setHasInitiatedCreation] = useState(false);
+
+  // Export state
+  const [showExportOptions, setShowExportOptions] = useState(false);
+  const [selectedExportFormat, setSelectedExportFormat] = useState<'pdf' | 'excel' | 'csv' | 'powerpoint'>('pdf');
+  const [activeExports, setActiveExports] = useState<ExportProgress[]>([]);
+  const [showDownloadManager, setShowDownloadManager] = useState(false);
+  const [exportHistory, setExportHistory] = useState<ExportHistoryItem[]>([]);
+
+  // Template state
+  const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false);
+
+  // Sharing state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showPermissionsModal, setShowPermissionsModal] = useState(false);
+  const [shareLinks, setShareLinks] = useState<ShareLink[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+
+  // Comments state
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
 
   // Fetch dashboard data
   const { isLoading, refetch } = useQuery(
@@ -168,6 +196,206 @@ const DashboardPage: React.FC = () => {
     {
       onSuccess: () => {
         console.log('Widget positions updated');
+      },
+    }
+  );
+
+  // Save as template mutation
+  const saveAsTemplateMutation = useMutation(
+    (data: {
+      dashboardId: string;
+      name: string;
+      description: string;
+      category: string;
+      tags: string[];
+      isPublic: boolean;
+      generateThumbnail: boolean;
+    }) => apiService.createDashboardTemplate(data),
+    {
+      onSuccess: () => {
+        toast.success('Dashboard saved as template');
+        queryClient.invalidateQueries(['templates']);
+        setShowSaveAsTemplate(false);
+      },
+      onError: () => {
+        toast.error('Failed to save template');
+      },
+    }
+  );
+
+  // Fetch share links
+  const { data: shareLinksData } = useQuery(
+    ['shareLinks', id],
+    () => apiService.getShareLinks(id!),
+    {
+      enabled: !!id && !isNewDashboard,
+      onSuccess: (data) => {
+        if (data.success && data.shareLinks) {
+          setShareLinks(data.shareLinks);
+        }
+      },
+    }
+  );
+
+  // Fetch permissions
+  const { data: permissionsData } = useQuery(
+    ['permissions', id],
+    () => apiService.getDashboardPermissions(id!),
+    {
+      enabled: !!id && !isNewDashboard,
+      onSuccess: (data) => {
+        if (data.success && data.permissions) {
+          setPermissions(data.permissions);
+        }
+      },
+    }
+  );
+
+  // Fetch available users
+  const { data: availableUsersData } = useQuery(
+    ['availableUsers', currentWorkspace?.id],
+    () => apiService.getAvailableUsers(currentWorkspace!.id, id),
+    {
+      enabled: !!currentWorkspace?.id && showPermissionsModal,
+    }
+  );
+
+  // Fetch available teams
+  const { data: availableTeamsData } = useQuery(
+    ['availableTeams', currentWorkspace?.id],
+    () => apiService.getAvailableTeams(currentWorkspace!.id, id),
+    {
+      enabled: !!currentWorkspace?.id && showPermissionsModal,
+    }
+  );
+
+  // Create share link mutation
+  const createShareLinkMutation = useMutation(
+    (data: { expiresIn?: number; password?: string; permission: 'view' | 'edit' | 'admin' }) =>
+      apiService.createShareLink(id!, data),
+    {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries(['shareLinks', id]);
+        return data.shareLink;
+      },
+      onError: () => {
+        toast.error('Failed to create share link');
+      },
+    }
+  );
+
+  // Revoke share link mutation
+  const revokeShareLinkMutation = useMutation(
+    (linkId: string) => apiService.revokeShareLink(linkId),
+    {
+      onSuccess: () => {
+        toast.success('Share link revoked');
+        queryClient.invalidateQueries(['shareLinks', id]);
+      },
+      onError: () => {
+        toast.error('Failed to revoke share link');
+      },
+    }
+  );
+
+  // Add permission mutation
+  const addPermissionMutation = useMutation(
+    (data: { userId?: string; teamId?: string; role: 'viewer' | 'editor' | 'admin' }) =>
+      apiService.addDashboardPermission(id!, data),
+    {
+      onSuccess: () => {
+        toast.success('Permission added');
+        queryClient.invalidateQueries(['permissions', id]);
+      },
+      onError: () => {
+        toast.error('Failed to add permission');
+      },
+    }
+  );
+
+  // Update permission mutation
+  const updatePermissionMutation = useMutation(
+    ({ permissionId, role }: { permissionId: string; role: 'viewer' | 'editor' | 'admin' }) =>
+      apiService.updateDashboardPermission(permissionId, role),
+    {
+      onSuccess: () => {
+        toast.success('Permission updated');
+        queryClient.invalidateQueries(['permissions', id]);
+      },
+      onError: () => {
+        toast.error('Failed to update permission');
+      },
+    }
+  );
+
+  // Remove permission mutation
+  const removePermissionMutation = useMutation(
+    (permissionId: string) => apiService.removeDashboardPermission(permissionId),
+    {
+      onSuccess: () => {
+        toast.success('Permission removed');
+        queryClient.invalidateQueries(['permissions', id]);
+      },
+      onError: () => {
+        toast.error('Failed to remove permission');
+      },
+    }
+  );
+
+  // Fetch comments
+  const { data: commentsData } = useQuery(
+    ['comments', id],
+    () => apiService.getDashboardComments(id!),
+    {
+      enabled: !!id && !isNewDashboard,
+      onSuccess: (data) => {
+        if (data.success && data.comments) {
+          setComments(data.comments);
+        }
+      },
+    }
+  );
+
+  // Add comment mutation
+  const addCommentMutation = useMutation(
+    (data: { content: string; parentId?: string }) =>
+      apiService.addDashboardComment(id!, data),
+    {
+      onSuccess: () => {
+        toast.success('Comment added');
+        queryClient.invalidateQueries(['comments', id]);
+      },
+      onError: () => {
+        toast.error('Failed to add comment');
+      },
+    }
+  );
+
+  // Update comment mutation
+  const updateCommentMutation = useMutation(
+    ({ commentId, content }: { commentId: string; content: string }) =>
+      apiService.updateDashboardComment(commentId, content),
+    {
+      onSuccess: () => {
+        toast.success('Comment updated');
+        queryClient.invalidateQueries(['comments', id]);
+      },
+      onError: () => {
+        toast.error('Failed to update comment');
+      },
+    }
+  );
+
+  // Delete comment mutation
+  const deleteCommentMutation = useMutation(
+    (commentId: string) => apiService.deleteDashboardComment(commentId),
+    {
+      onSuccess: () => {
+        toast.success('Comment deleted');
+        queryClient.invalidateQueries(['comments', id]);
+      },
+      onError: () => {
+        toast.error('Failed to delete comment');
       },
     }
   );
@@ -303,6 +531,230 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  // Handle export
+  const handleExport = async (format: 'pdf' | 'excel' | 'csv' | 'powerpoint' | 'custom') => {
+    if (format === 'custom') {
+      setSelectedExportFormat('pdf');
+      setShowExportOptions(true);
+    } else {
+      // Quick export with default settings
+      const options = {
+        format,
+        orientation: 'landscape' as const,
+        paperSize: 'letter' as const,
+        includeCharts: true,
+        includeData: true,
+        selectedWidgets: currentDashboard?.widgets?.map((w: Widget) => w.id) || [],
+      };
+      await initiateExport(options);
+    }
+  };
+
+  const initiateExport = async (options: any) => {
+    const exportId = `export-${Date.now()}`;
+    const newExport: ExportProgress = {
+      exportId,
+      status: 'processing',
+      progress: 0,
+      message: 'Preparing export...',
+      fileName: `${currentDashboard?.name || 'dashboard'}-${new Date().toISOString().split('T')[0]}.${options.format}`,
+      startedAt: new Date().toISOString(),
+    };
+
+    setActiveExports((prev) => [...prev, newExport]);
+    toast.success('Export started');
+
+    try {
+      // Call backend API to create export
+      const response = await apiService.createDashboardExport({
+        dashboardId: id,
+        format: options.format,
+        options,
+      });
+
+      // Simulate progress updates (in real implementation, use WebSocket or polling)
+      const progressSteps = [20, 40, 60, 80, 100];
+      for (const progress of progressSteps) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        setActiveExports((prev) =>
+          prev.map((exp) =>
+            exp.exportId === exportId
+              ? {
+                  ...exp,
+                  progress,
+                  message:
+                    progress < 100
+                      ? `Generating ${options.format.toUpperCase()}... ${progress}%`
+                      : 'Export complete!',
+                }
+              : exp
+          )
+        );
+      }
+
+      // Mark as completed
+      const downloadUrl = response.downloadUrl || `/api/exports/${exportId}/download`;
+      setActiveExports((prev) =>
+        prev.map((exp) =>
+          exp.exportId === exportId
+            ? { ...exp, status: 'completed', progress: 100, downloadUrl }
+            : exp
+        )
+      );
+
+      // Add to history
+      const historyItem: ExportHistoryItem = {
+        id: exportId,
+        dashboardId: id!,
+        dashboardName: currentDashboard?.name || 'Dashboard',
+        format: options.format,
+        fileName: newExport.fileName!,
+        fileSize: Math.floor(Math.random() * 5000000) + 100000, // Mock size
+        createdAt: new Date().toISOString(),
+        downloadUrl,
+        status: 'available',
+        downloadCount: 0,
+      };
+      setExportHistory((prev) => [historyItem, ...prev]);
+
+      toast.success('Export ready for download');
+    } catch (error) {
+      setActiveExports((prev) =>
+        prev.map((exp) =>
+          exp.exportId === exportId
+            ? {
+                ...exp,
+                status: 'failed',
+                error: 'Export failed. Please try again.',
+              }
+            : exp
+        )
+      );
+      toast.error('Export failed');
+    }
+  };
+
+  const handleExportWithOptions = async (options: any) => {
+    await initiateExport(options);
+  };
+
+  const handleDismissExport = (exportId: string) => {
+    setActiveExports((prev) => prev.filter((exp) => exp.exportId !== exportId));
+  };
+
+  const handleDownloadExport = (exportId: string, url: string) => {
+    // Trigger download
+    window.open(url, '_blank');
+
+    // Update download count in history
+    setExportHistory((prev) =>
+      prev.map((exp) =>
+        exp.id === exportId ? { ...exp, downloadCount: exp.downloadCount + 1 } : exp
+      )
+    );
+
+    toast.success('Download started');
+  };
+
+  const handleDeleteExportHistory = (exportId: string) => {
+    if (confirm('Are you sure you want to delete this export from history?')) {
+      setExportHistory((prev) =>
+        prev.map((exp) =>
+          exp.id === exportId ? { ...exp, status: 'deleted' as const } : exp
+        )
+      );
+      toast.success('Export deleted');
+    }
+  };
+
+  const handleClearExportHistory = () => {
+    if (confirm('Are you sure you want to clear all export history?')) {
+      setExportHistory([]);
+      toast.success('Export history cleared');
+    }
+  };
+
+  const handleRetryExport = (exportId: string) => {
+    // Find the export in active exports and retry
+    const failedExport = activeExports.find((exp) => exp.exportId === exportId);
+    if (failedExport) {
+      // Remove failed export and create new one
+      setActiveExports((prev) => prev.filter((exp) => exp.exportId !== exportId));
+      // Retry with default PDF export
+      handleExport('pdf');
+    }
+  };
+
+  // Handle save as template
+  const handleSaveAsTemplate = (templateData: {
+    name: string;
+    description: string;
+    category: string;
+    tags: string[];
+    isPublic: boolean;
+    generateThumbnail: boolean;
+  }) => {
+    saveAsTemplateMutation.mutate({
+      dashboardId: id!,
+      ...templateData,
+    });
+  };
+
+  // Handle create share link
+  const handleCreateShareLink = async (data: {
+    expiresIn?: number;
+    password?: string;
+    permission: 'view' | 'edit' | 'admin';
+  }) => {
+    const result = await createShareLinkMutation.mutateAsync(data);
+    return result.shareLink;
+  };
+
+  // Handle revoke share link
+  const handleRevokeShareLink = (linkId: string) => {
+    revokeShareLinkMutation.mutate(linkId);
+  };
+
+  // Handle copy link to clipboard
+  const handleCopyLink = (url: string) => {
+    navigator.clipboard.writeText(url);
+    toast.success('Link copied to clipboard');
+  };
+
+  // Handle add permission
+  const handleAddPermission = (data: {
+    userId?: string;
+    teamId?: string;
+    role: 'viewer' | 'editor' | 'admin';
+  }) => {
+    addPermissionMutation.mutate(data);
+  };
+
+  // Handle update permission
+  const handleUpdatePermission = (permissionId: string, role: 'viewer' | 'editor' | 'admin') => {
+    updatePermissionMutation.mutate({ permissionId, role });
+  };
+
+  // Handle remove permission
+  const handleRemovePermission = (permissionId: string) => {
+    removePermissionMutation.mutate(permissionId);
+  };
+
+  // Handle add comment
+  const handleAddComment = (content: string, parentId?: string) => {
+    addCommentMutation.mutate({ content, parentId });
+  };
+
+  // Handle update comment
+  const handleUpdateComment = (commentId: string, content: string) => {
+    updateCommentMutation.mutate({ commentId, content });
+  };
+
+  // Handle delete comment
+  const handleDeleteComment = (commentId: string) => {
+    deleteCommentMutation.mutate(commentId);
+  };
+
   if (isLoading || isNewDashboard) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -342,6 +794,43 @@ const DashboardPage: React.FC = () => {
               className={`btn ${showFilters ? 'btn-primary' : 'btn-outline'}`}
             >
               Filters
+            </button>
+            <ExportButton onExport={handleExport} disabled={!currentDashboard?.widgets || currentDashboard.widgets.length === 0} />
+            <button
+              onClick={() => setShowDownloadManager(true)}
+              className="btn btn-outline"
+              title="View export history"
+            >
+              Downloads {exportHistory.length > 0 && `(${exportHistory.length})`}
+            </button>
+            <button
+              onClick={() => setShowSaveAsTemplate(true)}
+              disabled={!currentDashboard?.widgets || currentDashboard.widgets.length === 0}
+              className="btn btn-outline"
+              title="Save this dashboard as a template"
+            >
+              📑 Save as Template
+            </button>
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="btn btn-outline"
+              title="Share this dashboard"
+            >
+              🔗 Share
+            </button>
+            <button
+              onClick={() => setShowPermissionsModal(true)}
+              className="btn btn-outline"
+              title="Manage user and team permissions"
+            >
+              👥 Permissions
+            </button>
+            <button
+              onClick={() => setShowComments(true)}
+              className="btn btn-outline"
+              title="View and add comments"
+            >
+              💬 Comments {comments.length > 0 && `(${comments.length})`}
             </button>
             <button
               onClick={() => setDashboardEditMode(!isDashboardEditMode)}
@@ -509,6 +998,87 @@ const DashboardPage: React.FC = () => {
           onDelete={handleDeleteDashboard}
         />
       )}
+
+      {/* Export Options Modal */}
+      <ExportOptionsModal
+        isOpen={showExportOptions}
+        onClose={() => setShowExportOptions(false)}
+        onExport={handleExportWithOptions}
+        dashboardId={id!}
+        widgetList={currentDashboard?.widgets?.map((w: Widget) => ({
+          id: w.id,
+          title: w.title,
+          type: w.type,
+        })) || []}
+        initialFormat={selectedExportFormat}
+      />
+
+      {/* Download Manager */}
+      <DownloadManager
+        isOpen={showDownloadManager}
+        onClose={() => setShowDownloadManager(false)}
+        exports={exportHistory}
+        onDownload={handleDownloadExport}
+        onDelete={handleDeleteExportHistory}
+        onClearHistory={handleClearExportHistory}
+      />
+
+      {/* Save as Template Modal */}
+      <SaveAsTemplateModal
+        isOpen={showSaveAsTemplate}
+        onClose={() => setShowSaveAsTemplate(false)}
+        onSave={handleSaveAsTemplate}
+        dashboardName={currentDashboard?.name || 'Dashboard'}
+      />
+
+      {/* Share Dashboard Modal */}
+      <ShareDashboardModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        dashboardId={id!}
+        dashboardName={currentDashboard?.name || 'Dashboard'}
+        existingLinks={shareLinks}
+        onCreateLink={handleCreateShareLink}
+        onRevokeLink={handleRevokeShareLink}
+        onCopyLink={handleCopyLink}
+      />
+
+      {/* Permissions Manager Modal */}
+      <PermissionsManager
+        isOpen={showPermissionsModal}
+        onClose={() => setShowPermissionsModal(false)}
+        dashboardId={id!}
+        dashboardName={currentDashboard?.name || 'Dashboard'}
+        permissions={permissions}
+        availableUsers={availableUsersData?.users || []}
+        availableTeams={availableTeamsData?.teams || []}
+        onAddPermission={handleAddPermission}
+        onUpdatePermission={handleUpdatePermission}
+        onRemovePermission={handleRemovePermission}
+        currentUserId={availableUsersData?.currentUserId || ''}
+      />
+
+      {/* Dashboard Comments */}
+      <DashboardComments
+        isOpen={showComments}
+        onClose={() => setShowComments(false)}
+        dashboardId={id!}
+        dashboardName={currentDashboard?.name || 'Dashboard'}
+        comments={comments}
+        onAddComment={handleAddComment}
+        onUpdateComment={handleUpdateComment}
+        onDeleteComment={handleDeleteComment}
+        currentUserId={availableUsersData?.currentUserId || ''}
+        currentUserName={availableUsersData?.currentUserName || 'Unknown User'}
+      />
+
+      {/* Export Progress Bar */}
+      <ExportProgressBar
+        exports={activeExports}
+        onDismiss={handleDismissExport}
+        onDownload={handleDownloadExport}
+        onRetry={handleRetryExport}
+      />
     </div>
   );
 };

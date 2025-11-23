@@ -173,6 +173,172 @@ class ApiService {
     return response.data;
   }
 
+  // Enhanced Share Link Management endpoints
+  async createShareLink(dashboardId: string, data: {
+    expiresIn?: number;
+    password?: string;
+    permission: 'view' | 'edit' | 'admin';
+  }) {
+    const response = await this.instance.post(`/dashboards/${dashboardId}/share-links`, data);
+    return response.data;
+  }
+
+  async getShareLinks(dashboardId: string) {
+    const response = await this.instance.get(`/dashboards/${dashboardId}/share-links`);
+    return response.data;
+  }
+
+  async revokeShareLink(linkId: string) {
+    const response = await this.instance.delete(`/share-links/${linkId}`);
+    return response.data;
+  }
+
+  async verifySharePassword(token: string, password: string) {
+    const response = await this.instance.post('/share-links/verify-password', {
+      token,
+      password
+    });
+    return response.data;
+  }
+
+  async updateShareLink(linkId: string, data: {
+    expiresIn?: number | null;
+    password?: string;
+    permission?: 'view' | 'edit' | 'admin';
+    isActive?: boolean;
+  }) {
+    const response = await this.instance.put(`/share-links/${linkId}`, data);
+    return response.data;
+  }
+
+  // Permission Management endpoints
+  async getDashboardPermissions(dashboardId: string) {
+    const response = await this.instance.get(`/dashboards/${dashboardId}/permissions`);
+    return response.data;
+  }
+
+  async addDashboardPermission(dashboardId: string, data: {
+    userId?: string;
+    teamId?: string;
+    role: 'viewer' | 'editor' | 'admin';
+  }) {
+    const response = await this.instance.post(`/dashboards/${dashboardId}/permissions`, data);
+    return response.data;
+  }
+
+  async updateDashboardPermission(permissionId: string, role: 'viewer' | 'editor' | 'admin') {
+    const response = await this.instance.put(`/dashboard-permissions/${permissionId}`, { role });
+    return response.data;
+  }
+
+  async removeDashboardPermission(permissionId: string) {
+    const response = await this.instance.delete(`/dashboard-permissions/${permissionId}`);
+    return response.data;
+  }
+
+  async getAvailableUsers(workspaceId: string, dashboardId?: string) {
+    const response = await this.instance.get(`/workspaces/${workspaceId}/users`, {
+      params: { dashboardId }
+    });
+    return response.data;
+  }
+
+  async getAvailableTeams(workspaceId: string, dashboardId?: string) {
+    const response = await this.instance.get(`/workspaces/${workspaceId}/teams`, {
+      params: { dashboardId }
+    });
+    return response.data;
+  }
+
+  // Dashboard Comments endpoints
+  async getDashboardComments(dashboardId: string) {
+    const response = await this.instance.get(`/dashboards/${dashboardId}/comments`);
+    return response.data;
+  }
+
+  async addDashboardComment(dashboardId: string, data: {
+    content: string;
+    parentId?: string;
+  }) {
+    const response = await this.instance.post(`/dashboards/${dashboardId}/comments`, data);
+    return response.data;
+  }
+
+  async updateDashboardComment(commentId: string, content: string) {
+    const response = await this.instance.put(`/dashboard-comments/${commentId}`, { content });
+    return response.data;
+  }
+
+  async deleteDashboardComment(commentId: string) {
+    const response = await this.instance.delete(`/dashboard-comments/${commentId}`);
+    return response.data;
+  }
+
+  async createDashboardExport(data: {
+    dashboardId: string;
+    format: 'pdf' | 'excel' | 'csv' | 'powerpoint';
+    options: any;
+  }) {
+    const response = await this.instance.post('/dashboards/export', data, {
+      timeout: 120000 // 2 minutes timeout for export generation
+    });
+    return response.data;
+  }
+
+  // Dashboard Template endpoints
+  async getDashboardTemplates(params?: {
+    category?: string;
+    tags?: string[];
+    isPublic?: boolean;
+    search?: string;
+  }) {
+    const response = await this.instance.get('/dashboards/templates', { params });
+    return response.data;
+  }
+
+  async getDashboardTemplate(id: string) {
+    const response = await this.instance.get(`/dashboards/templates/${id}`);
+    return response.data;
+  }
+
+  async createDashboardTemplate(data: {
+    dashboardId: string;
+    name: string;
+    description: string;
+    category: string;
+    tags: string[];
+    isPublic: boolean;
+    generateThumbnail: boolean;
+  }) {
+    const response = await this.instance.post('/dashboards/templates', data);
+    return response.data;
+  }
+
+  async createDashboardFromTemplate(data: {
+    templateId: string;
+    workspaceId: string;
+    name?: string;
+  }) {
+    const response = await this.instance.post('/dashboards/from-template', data);
+    return response.data;
+  }
+
+  async updateDashboardTemplate(id: string, data: Partial<{
+    name: string;
+    description: string;
+    category: string;
+    tags: string[];
+    isPublic: boolean;
+  }>) {
+    const response = await this.instance.put(`/dashboards/templates/${id}`, data);
+    return response.data;
+  }
+
+  async deleteDashboardTemplate(id: string) {
+    const response = await this.instance.delete(`/dashboards/templates/${id}`);
+    return response.data;
+  }
+
   // Widget endpoints
   async createWidget(data: {
     dashboardId: string;
@@ -206,6 +372,91 @@ class ApiService {
 
   async batchUpdateWidgets(widgets: Array<{ id: string; position?: any; config?: any }>) {
     const response = await this.instance.post('/widgets/batch-update', { widgets });
+    return response.data;
+  }
+
+  // Calculated Field endpoints
+  async getCalculatedFields(dashboardId: string) {
+    const response = await this.instance.get(`/dashboards/${dashboardId}/calculated-fields`);
+    return response.data;
+  }
+
+  async createCalculatedField(dashboardId: string, data: {
+    name: string;
+    expression: string;
+    description?: string;
+    returnType?: 'number' | 'string' | 'date' | 'boolean';
+  }) {
+    const response = await this.instance.post(`/dashboards/${dashboardId}/calculated-fields`, data);
+    return response.data;
+  }
+
+  async updateCalculatedField(fieldId: string, data: {
+    name?: string;
+    expression?: string;
+    description?: string;
+    returnType?: 'number' | 'string' | 'date' | 'boolean';
+  }) {
+    const response = await this.instance.put(`/calculated-fields/${fieldId}`, data);
+    return response.data;
+  }
+
+  async deleteCalculatedField(fieldId: string) {
+    const response = await this.instance.delete(`/calculated-fields/${fieldId}`);
+    return response.data;
+  }
+
+  async testCalculatedField(data: {
+    expression: string;
+    sampleData: Record<string, any>;
+  }) {
+    const response = await this.instance.post('/calculated-fields/test', data);
+    return response.data;
+  }
+
+  // Dashboard Folder endpoints
+  async getDashboardFolders(workspaceId: string) {
+    const response = await this.instance.get(`/workspaces/${workspaceId}/dashboard-folders`);
+    return response.data;
+  }
+
+  async createDashboardFolder(workspaceId: string, data: {
+    name: string;
+    parentId: string | null;
+    icon?: string;
+    color?: string;
+  }) {
+    const response = await this.instance.post(`/workspaces/${workspaceId}/dashboard-folders`, data);
+    return response.data;
+  }
+
+  async updateDashboardFolder(folderId: string, data: {
+    name?: string;
+    parentId?: string | null;
+    icon?: string;
+    color?: string;
+  }) {
+    const response = await this.instance.put(`/dashboard-folders/${folderId}`, data);
+    return response.data;
+  }
+
+  async deleteDashboardFolder(folderId: string) {
+    const response = await this.instance.delete(`/dashboard-folders/${folderId}`);
+    return response.data;
+  }
+
+  async moveDashboardToFolder(dashboardId: string, folderId: string | null) {
+    const response = await this.instance.put(`/dashboards/${dashboardId}/move`, { folderId });
+    return response.data;
+  }
+
+  async toggleDashboardFavorite(dashboardId: string) {
+    const response = await this.instance.post(`/dashboards/${dashboardId}/favorite`);
+    return response.data;
+  }
+
+  async trackDashboardView(dashboardId: string) {
+    const response = await this.instance.post(`/dashboards/${dashboardId}/view`);
     return response.data;
   }
 

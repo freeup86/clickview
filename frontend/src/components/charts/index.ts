@@ -20,6 +20,7 @@ export { HeatmapChart } from './HeatmapChart';
 export { TreemapChart } from './TreemapChart';
 export { WaterfallChart } from './WaterfallChart';
 export { GaugeChart } from './GaugeChart';
+export { BatteryChart } from './BatteryChart';
 export { RadarChartComponent } from './RadarChart';
 export { BoxPlotChart } from './BoxPlotChart';
 export { ViolinChart } from './ViolinChart';
@@ -28,6 +29,18 @@ export { GanttChart } from './GanttChart';
 export { TimelineChart } from './TimelineChart';
 export { SunburstChart } from './SunburstChart';
 export { SankeyChart } from './SankeyChart';
+
+// Sprint/Agile Charts
+export { SprintVelocityChart } from './SprintVelocityChart';
+export { SprintBurndownChart } from './SprintBurndownChart';
+export { SprintBurnupChart } from './SprintBurnupChart';
+export { CumulativeFlowChart } from './CumulativeFlowChart';
+export { WorkloadChart } from './WorkloadChart';
+
+// Special Cards
+export { EmbedCard } from './EmbedCard';
+export { PortfolioCard } from './PortfolioCard';
+export { AISummaryCard } from './AISummaryCard';
 
 // Re-export types for convenience
 export type { BaseChartProps } from '../../types/charts';
@@ -46,6 +59,7 @@ import { HeatmapChart } from './HeatmapChart';
 import { TreemapChart } from './TreemapChart';
 import { WaterfallChart } from './WaterfallChart';
 import { GaugeChart } from './GaugeChart';
+import { BatteryChart } from './BatteryChart';
 import { RadarChartComponent } from './RadarChart';
 import { BoxPlotChart } from './BoxPlotChart';
 import { ViolinChart } from './ViolinChart';
@@ -54,6 +68,14 @@ import { GanttChart } from './GanttChart';
 import { TimelineChart } from './TimelineChart';
 import { SunburstChart } from './SunburstChart';
 import { SankeyChart } from './SankeyChart';
+import { SprintVelocityChart } from './SprintVelocityChart';
+import { SprintBurndownChart } from './SprintBurndownChart';
+import { SprintBurnupChart } from './SprintBurnupChart';
+import { CumulativeFlowChart } from './CumulativeFlowChart';
+import { WorkloadChart } from './WorkloadChart';
+import { EmbedCard } from './EmbedCard';
+import { PortfolioCard } from './PortfolioCard';
+import { AISummaryCard } from './AISummaryCard';
 
 export const CHART_REGISTRY: Partial<ChartRegistry> = {
   [ChartType.LINE]: {
@@ -177,6 +199,17 @@ export const CHART_REGISTRY: Partial<ChartRegistry> = {
     optionalFields: [],
     defaultConfig: { type: ChartType.GAUGE },
   },
+  [ChartType.BATTERY]: {
+    type: ChartType.BATTERY,
+    name: 'Battery Chart',
+    description: 'Progress/capacity indicator',
+    icon: '🔋',
+    category: 'business',
+    component: BatteryChart,
+    requiredFields: ['valueField'],
+    optionalFields: [],
+    defaultConfig: { type: ChartType.BATTERY },
+  },
   [ChartType.RADAR]: {
     type: ChartType.RADAR,
     name: 'Radar Chart',
@@ -264,6 +297,94 @@ export const CHART_REGISTRY: Partial<ChartRegistry> = {
     requiredFields: ['sourceField', 'targetField', 'valueField'],
     optionalFields: [],
     defaultConfig: { type: ChartType.SANKEY },
+  },
+  [ChartType.SPRINT_VELOCITY]: {
+    type: ChartType.SPRINT_VELOCITY,
+    name: 'Sprint Velocity',
+    description: 'Committed vs completed work',
+    icon: '🏃',
+    category: 'business',
+    component: SprintVelocityChart,
+    requiredFields: ['xField', 'yField'],
+    optionalFields: ['committed', 'completed'],
+    defaultConfig: { type: ChartType.SPRINT_VELOCITY },
+  },
+  [ChartType.SPRINT_BURNDOWN]: {
+    type: ChartType.SPRINT_BURNDOWN,
+    name: 'Sprint Burndown',
+    description: 'Remaining work over time',
+    icon: '📉',
+    category: 'business',
+    component: SprintBurndownChart,
+    requiredFields: ['xField', 'yField'],
+    optionalFields: ['ideal'],
+    defaultConfig: { type: ChartType.SPRINT_BURNDOWN },
+  },
+  [ChartType.SPRINT_BURNUP]: {
+    type: ChartType.SPRINT_BURNUP,
+    name: 'Sprint Burnup',
+    description: 'Completed work and scope changes',
+    icon: '📈',
+    category: 'business',
+    component: SprintBurnupChart,
+    requiredFields: ['xField', 'yField'],
+    optionalFields: ['totalScope'],
+    defaultConfig: { type: ChartType.SPRINT_BURNUP },
+  },
+  [ChartType.CUMULATIVE_FLOW]: {
+    type: ChartType.CUMULATIVE_FLOW,
+    name: 'Cumulative Flow Diagram',
+    description: 'Work distribution by status',
+    icon: '🌊',
+    category: 'business',
+    component: CumulativeFlowChart,
+    requiredFields: ['xField', 'yField'],
+    optionalFields: ['seriesField'],
+    defaultConfig: { type: ChartType.CUMULATIVE_FLOW },
+  },
+  [ChartType.WORKLOAD]: {
+    type: ChartType.WORKLOAD,
+    name: 'Workload Chart',
+    description: 'Team capacity vs allocation',
+    icon: '👥',
+    category: 'business',
+    component: WorkloadChart,
+    requiredFields: ['xField', 'yField'],
+    optionalFields: ['capacity'],
+    defaultConfig: { type: ChartType.WORKLOAD },
+  },
+  [ChartType.EMBED]: {
+    type: ChartType.EMBED,
+    name: 'Embed Card',
+    description: 'Embed external content',
+    icon: '🔗',
+    category: 'specialized',
+    component: EmbedCard,
+    requiredFields: [],
+    optionalFields: ['embedUrl', 'embedContent'],
+    defaultConfig: { type: ChartType.EMBED },
+  },
+  [ChartType.PORTFOLIO]: {
+    type: ChartType.PORTFOLIO,
+    name: 'Portfolio Overview',
+    description: 'Multi-project summary',
+    icon: '📋',
+    category: 'business',
+    component: PortfolioCard,
+    requiredFields: ['xField', 'yField'],
+    optionalFields: [],
+    defaultConfig: { type: ChartType.PORTFOLIO },
+  },
+  [ChartType.AI_SUMMARY]: {
+    type: ChartType.AI_SUMMARY,
+    name: 'AI Summary',
+    description: 'AI-generated insights',
+    icon: '🤖',
+    category: 'specialized',
+    component: AISummaryCard,
+    requiredFields: [],
+    optionalFields: [],
+    defaultConfig: { type: ChartType.AI_SUMMARY },
   },
 };
 
