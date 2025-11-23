@@ -254,16 +254,16 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
             return <StackedBarChart data={widgetData} config={widget.config} onClick={handleChartClick} />;
           
           case 'line_chart':
-            return <LineChart data={widgetData} config={widget.config} />;
-          
+            return <LineChart data={widgetData} config={widget.config} onClick={handleChartClick} />;
+
           case 'pie_chart':
-            return <PieChart data={widgetData} config={widget.config} />;
-          
+            return <PieChart data={widgetData} config={widget.config} onClick={handleChartClick} />;
+
           case 'donut_chart':
             return <DonutChart data={widgetData} config={widget.config} onClick={handleChartClick} />;
-          
+
           case 'area_chart':
-            return <AreaChart data={widgetData} config={widget.config} />;
+            return <AreaChart data={widgetData} config={widget.config} onClick={handleChartClick} />;
           
           case 'data_table':
             return <DataTable data={widgetData} config={widget.config} />;
@@ -272,13 +272,13 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
             return <ProgressBar data={widgetData} config={widget.config} />;
           
           case 'heatmap':
-            return <HeatMap data={widgetData} config={widget.config} />;
-          
+            return <HeatMap data={widgetData} config={widget.config} onClick={handleChartClick} />;
+
           case 'gantt_chart':
-            return <GanttChart data={widgetData} config={widget.config} />;
-          
+            return <GanttChart data={widgetData} config={widget.config} onClick={handleChartClick} />;
+
           case 'burndown_chart':
-            return <BurndownChart data={widgetData} config={widget.config} />;
+            return <BurndownChart data={widgetData} config={widget.config} onClick={handleChartClick} />;
           
           case 'custom_field_summary':
             return <CustomFieldSummary data={widgetData} config={widget.config} />;
