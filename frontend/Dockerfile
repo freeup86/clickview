@@ -15,9 +15,6 @@ COPY package*.json ./
 RUN npm ci && \
     npm cache clean --force
 
-# Debug: Check if TypeScript was installed
-RUN ls -la node_modules/.bin/ | grep -E "tsc|vite" || echo "TypeScript not found in node_modules/.bin/"
-
 # Copy source code
 COPY . .
 

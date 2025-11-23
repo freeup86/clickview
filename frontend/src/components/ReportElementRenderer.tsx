@@ -57,17 +57,89 @@ export const ReportElementRenderer: React.FC<ReportElementRendererProps> = ({
   const isVisible = useMemo(() => {
     if (!element.visibility) return true;
     if (element.visibility.type === 'always') return true;
+
     if (element.visibility.type === 'conditional' && element.visibility.condition) {
       try {
-        return evaluateFormula('', data); // TODO: Evaluate condition
+        // Evaluate condition expression
+        // Support simple comparisons: field operator value
+        const condition = element.visibility.condition;
+
+        // Parse condition (e.g., "status == 'active'" or "value > 100")
+        const operators = ['===', '==', '!==', '!=', '>=', '<=', '>', '<'];
+        let operator = '';
+        let parts: string[] = [];
+
+        for (const op of operators) {
+          if (condition.includes(op)) {
+            operator = op;
+            parts = condition.split(op).map(p => p.trim());
+            break;
+          }
+        }
+
+        if (parts.length === 2) {
+          // Get field value from data
+          const fieldName = parts[0];
+          let fieldValue = data[fieldName];
+
+          // Get comparison value (remove quotes if string literal)
+          let compValue: any = parts[1];
+          if (compValue.startsWith("'") || compValue.startsWith('"')) {
+            compValue = compValue.slice(1, -1);
+          } else if (!isNaN(Number(compValue))) {
+            compValue = Number(compValue);
+          }
+
+          // Perform comparison
+          switch (operator) {
+            case '===':
+            case '==':
+              return fieldValue == compValue;
+            case '!==':
+            case '!=':
+              return fieldValue != compValue;
+            case '>':
+              return Number(fieldValue) > Number(compValue);
+            case '<':
+              return Number(fieldValue) < Number(compValue);
+            case '>=':
+              return Number(fieldValue) >= Number(compValue);
+            case '<=':
+              return Number(fieldValue) <= Number(compValue);
+            default:
+              return true;
+          }
+        }
+
+        return evaluateFormula(condition, data);
       } catch {
         return true;
       }
     }
+
     if (element.visibility.type === 'parameter') {
-      // TODO: Check parameter value
-      return true;
+      // Check parameter value
+      const paramName = element.visibility.parameterName;
+      if (!paramName) return true;
+
+      // Get parameter value from data or URL params
+      let paramValue = data[paramName];
+
+      // Also check URL parameters if available
+      if (typeof window !== 'undefined' && !paramValue) {
+        const urlParams = new URLSearchParams(window.location.search);
+        paramValue = urlParams.get(paramName);
+      }
+
+      // If parameter has expected value, compare it
+      if (element.visibility.parameterValue !== undefined) {
+        return paramValue == element.visibility.parameterValue;
+      }
+
+      // Otherwise, just check if parameter exists and is truthy
+      return !!paramValue;
     }
+
     return true;
   }, [element.visibility, data]);
 
@@ -161,19 +233,156 @@ function renderElementContent(
 // ===================================================================
 
 const ChartElementRenderer: React.FC<{ element: ChartElement; data: Record<string, any> }> = ({ element, data }) => {
+  const [chartData, setChartData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
   const ChartComponent = getChartComponent(element.chartType);
+
+  useEffect(() => {
+    fetchChartData();
+  }, [element.dataSource]);
+
+  const fetchChartData = async () => {
+    setLoading(true);
+    try {
+      let rawData: any = null;
+
+      // Fetch data from dataSource
+      if (element.dataSource) {
+        if (element.dataSource.type === 'static' && element.dataSource.data) {
+          rawData = element.dataSource.data;
+        } else if (element.dataSource.type === 'api' && element.dataSource.apiEndpoint) {
+          const response = await fetch(element.dataSource.apiEndpoint, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (response.ok) {
+            rawData = await response.json();
+          }
+        } else if (element.dataSource.type === 'query' && element.dataSource.query) {
+          // Execute query via API
+          const response = await fetch('/api/query', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: element.dataSource.query }),
+          });
+          if (response.ok) {
+            rawData = await response.json();
+          }
+        }
+      }
+
+      // Apply calculated fields if configured
+      if (rawData && element.calculatedFields && element.calculatedFields.length > 0) {
+        if (Array.isArray(rawData)) {
+          rawData = rawData.map(row => {
+            const newRow = { ...row };
+            element.calculatedFields!.forEach(field => {
+              try {
+                // Evaluate formula for calculated field
+                if (field.formula) {
+                  // Simple formula evaluation (support basic arithmetic and field references)
+                  let formula = field.formula;
+
+                  // Replace field references with values
+                  Object.keys(row).forEach(key => {
+                    formula = formula.replace(new RegExp(`\\b${key}\\b`, 'g'), String(row[key]));
+                  });
+
+                  // Evaluate the formula (safely)
+                  try {
+                    newRow[field.name] = eval(formula);
+                  } catch {
+                    newRow[field.name] = 0;
+                  }
+                }
+              } catch {
+                newRow[field.name] = null;
+              }
+            });
+            return newRow;
+          });
+        } else if (rawData.data && Array.isArray(rawData.data)) {
+          rawData.data = rawData.data.map((row: any) => {
+            const newRow = { ...row };
+            element.calculatedFields!.forEach(field => {
+              try {
+                if (field.formula) {
+                  let formula = field.formula;
+                  Object.keys(row).forEach(key => {
+                    formula = formula.replace(new RegExp(`\\b${key}\\b`, 'g'), String(row[key]));
+                  });
+                  try {
+                    newRow[field.name] = eval(formula);
+                  } catch {
+                    newRow[field.name] = 0;
+                  }
+                }
+              } catch {
+                newRow[field.name] = null;
+              }
+            });
+            return newRow;
+          });
+        }
+      }
+
+      // Apply filters if configured
+      if (rawData && element.filters && element.filters.length > 0) {
+        if (Array.isArray(rawData)) {
+          rawData = rawData.filter(row => {
+            return element.filters!.every(filter => {
+              const value = row[filter.field];
+              switch (filter.operator) {
+                case 'equals':
+                  return value == filter.value;
+                case 'notEquals':
+                  return value != filter.value;
+                case 'greaterThan':
+                  return Number(value) > Number(filter.value);
+                case 'lessThan':
+                  return Number(value) < Number(filter.value);
+                case 'contains':
+                  return String(value).includes(String(filter.value));
+                case 'in':
+                  return Array.isArray(filter.value) && filter.value.includes(value);
+                default:
+                  return true;
+              }
+            });
+          });
+        }
+      }
+
+      setChartData(rawData);
+    } catch (error) {
+      console.error('Failed to fetch chart data:', error);
+      setChartData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!ChartComponent) {
     return <div className="text-gray-400 flex items-center justify-center h-full">Chart type not found</div>;
   }
 
-  // TODO: Fetch data from dataSource
-  // TODO: Apply calculated fields
-  // TODO: Apply filters
+  if (loading) {
+    return <div className="text-gray-400 flex items-center justify-center h-full">Loading chart data...</div>;
+  }
+
+  if (!chartData) {
+    return <div className="text-gray-400 flex items-center justify-center h-full">No data available</div>;
+  }
 
   return (
     <div className="w-full h-full">
-      <ChartComponent {...element.config} />
+      <ChartComponent {...element.config} data={chartData} />
     </div>
   );
 };
@@ -185,16 +394,126 @@ const ChartElementRenderer: React.FC<{ element: ChartElement; data: Record<strin
 const TableElementRenderer: React.FC<{ element: TableElement; data: Record<string, any> }> = ({ element, data }) => {
   const [sortedData, setSortedData] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-
-  // TODO: Fetch data from dataSource
-  // TODO: Apply calculated fields
-  // TODO: Apply filters
-  // TODO: Apply sorting
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Placeholder: Set some sample data
-    setSortedData([]);
-  }, [element]);
+    fetchTableData();
+  }, [element, data]);
+
+  const fetchTableData = async () => {
+    setLoading(true);
+    try {
+      let rawData: any = null;
+
+      // Fetch data from dataSource
+      if (element.dataSource) {
+        if (element.dataSource.type === 'static' && element.dataSource.data) {
+          rawData = element.dataSource.data;
+        } else if (element.dataSource.type === 'api' && element.dataSource.apiEndpoint) {
+          const response = await fetch(element.dataSource.apiEndpoint, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (response.ok) {
+            rawData = await response.json();
+          }
+        } else if (element.dataSource.type === 'query' && element.dataSource.query) {
+          const response = await fetch('/api/query', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: element.dataSource.query }),
+          });
+          if (response.ok) {
+            rawData = await response.json();
+          }
+        }
+      }
+
+      // Fallback to data prop if no dataSource
+      if (!rawData && data) {
+        rawData = data;
+      }
+
+      // Ensure data is an array
+      if (!Array.isArray(rawData)) {
+        rawData = rawData ? [rawData] : [];
+      }
+
+      // Apply calculated fields
+      if (element.calculatedFields && element.calculatedFields.length > 0) {
+        rawData = rawData.map((row: any) => {
+          const newRow = { ...row };
+          element.calculatedFields!.forEach((field) => {
+            try {
+              if (field.formula) {
+                let formula = field.formula;
+                Object.keys(row).forEach((key) => {
+                  formula = formula.replace(new RegExp(`\\b${key}\\b`, 'g'), String(row[key]));
+                });
+                try {
+                  newRow[field.name] = eval(formula);
+                } catch {
+                  newRow[field.name] = 0;
+                }
+              }
+            } catch {
+              newRow[field.name] = null;
+            }
+          });
+          return newRow;
+        });
+      }
+
+      // Apply filters
+      if (element.filters && element.filters.length > 0) {
+        rawData = rawData.filter((row: any) => {
+          return element.filters!.every((filter) => {
+            const value = row[filter.field];
+            switch (filter.operator) {
+              case 'equals':
+                return value == filter.value;
+              case 'notEquals':
+                return value != filter.value;
+              case 'greaterThan':
+                return Number(value) > Number(filter.value);
+              case 'lessThan':
+                return Number(value) < Number(filter.value);
+              case 'contains':
+                return String(value).includes(String(filter.value));
+              case 'in':
+                return Array.isArray(filter.value) && filter.value.includes(value);
+              default:
+                return true;
+            }
+          });
+        });
+      }
+
+      // Apply sorting (if configured)
+      if (element.sorting?.defaultColumn && element.sorting?.defaultOrder) {
+        const { defaultColumn, defaultOrder } = element.sorting;
+        rawData = [...rawData].sort((a, b) => {
+          const aVal = a[defaultColumn];
+          const bVal = b[defaultColumn];
+          if (aVal < bVal) return defaultOrder === 'asc' ? -1 : 1;
+          if (aVal > bVal) return defaultOrder === 'asc' ? 1 : -1;
+          return 0;
+        });
+      }
+
+      setSortedData(rawData);
+    } catch (error) {
+      console.error('Failed to fetch table data:', error);
+      setSortedData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const { pagination } = element;
   const pageSize = pagination?.pageSize || 10;
@@ -342,8 +661,19 @@ const MetricCardElementRenderer: React.FC<{ element: MetricCardElement; data: Re
   element,
   data,
 }) => {
-  // TODO: Fetch and calculate metric value
-  const metricValue = 0;
+  // Fetch and calculate metric value
+  let metricValue = 0;
+
+  if (element.dataSource) {
+    if (element.dataSource.type === 'static' && element.dataSource.data) {
+      metricValue = element.dataSource.data[element.metric.field] || 0;
+    } else if (data && data[element.metric.field] !== undefined) {
+      metricValue = data[element.metric.field];
+    }
+  } else if (data && data[element.metric.field] !== undefined) {
+    metricValue = data[element.metric.field];
+  }
+
   const comparisonValue = element.comparison?.value || 0;
   const percentChange = comparisonValue !== 0 ? ((metricValue - comparisonValue) / comparisonValue) * 100 : 0;
 

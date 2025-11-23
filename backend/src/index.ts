@@ -21,6 +21,8 @@ import dataRoutes from './routes/data.routes';
 import clickupRoutes from './routes/clickup.routes';
 import tasksRoutes from './routes/tasks.routes';
 import tasksSyncRoutes from './routes/tasks.sync.routes';
+import reportRoutes from './routes/report.routes';
+import scheduleRoutes from './routes/schedule.routes';
 
 // Dashboard feature routes (Week 1-7 implementation)
 import dashboardTemplatesRoutes from './routes/dashboard-templates.routes';
@@ -103,6 +105,8 @@ app.use('/api/data', dataRoutes);
 app.use('/api/clickup', clickupRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/tasks', tasksSyncRoutes);
+app.use('/api/reports', reportRoutes); // Enterprise report builder
+app.use('/api/schedules', scheduleRoutes); // Report scheduling & distribution
 
 // Dashboard feature routes (Week 1-7 implementation)
 app.use('/api/dashboards/templates', dashboardTemplatesRoutes); // Template gallery

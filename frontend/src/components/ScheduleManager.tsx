@@ -32,12 +32,22 @@ export const ScheduleManager: React.FC = () => {
   const loadSchedules = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/schedules');
+      const response = await fetch('/api/schedules', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
       setSchedules(data);
     } catch (error) {
       console.error('Failed to load schedules:', error);
+      setSchedules([]);
     } finally {
       setLoading(false);
     }
@@ -344,6 +354,8 @@ interface ScheduleWizardProps {
 
 const ScheduleWizard: React.FC<ScheduleWizardProps> = ({ onClose, onComplete }) => {
   const [step, setStep] = useState(1);
+  const [reports, setReports] = useState<any[]>([]);
+  const [loadingReports, setLoadingReports] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     reportId: '',
@@ -353,6 +365,31 @@ const ScheduleWizard: React.FC<ScheduleWizardProps> = ({ onClose, onComplete }) 
     timezone: 'UTC',
     distribution: [] as any[],
   });
+
+  useEffect(() => {
+    loadReports();
+  }, []);
+
+  const loadReports = async () => {
+    setLoadingReports(true);
+    try {
+      const response = await fetch('/api/reports', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setReports(data);
+      }
+    } catch (error) {
+      console.error('Failed to load reports:', error);
+    } finally {
+      setLoadingReports(false);
+    }
+  };
 
   const handleSubmit = async () => {
     try {
@@ -426,9 +463,14 @@ const ScheduleWizard: React.FC<ScheduleWizardProps> = ({ onClose, onComplete }) 
                   value={formData.reportId}
                   onChange={(e) => setFormData({ ...formData, reportId: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+                  disabled={loadingReports}
                 >
-                  <option value="">Select a report...</option>
-                  {/* TODO: Load reports dynamically */}
+                  <option value="">{loadingReports ? 'Loading reports...' : 'Select a report...'}</option>
+                  {reports.map((report) => (
+                    <option key={report.id} value={report.id}>
+                      {report.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -507,10 +549,243 @@ const ScheduleWizard: React.FC<ScheduleWizardProps> = ({ onClose, onComplete }) 
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Configure how and where reports will be delivered
               </p>
-              {/* TODO: Add distribution configuration UI */}
-              <div className="text-center text-gray-500 py-8">
-                Distribution configuration coming soon
+
+              {/* Email Distribution */}
+              <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                <label className="flex items-center gap-2 mb-3">
+                  <input
+                    type="checkbox"
+                    checked={formData.distribution.some(d => d.type === 'email')}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData({
+                          ...formData,
+                          distribution: [...formData.distribution, {
+                            type: 'email',
+                            enabled: true,
+                            recipients: '',
+                            subject: '',
+                            body: ''
+                          }]
+                        });
+                      } else {
+                        setFormData({
+                          ...formData,
+                          distribution: formData.distribution.filter(d => d.type !== 'email')
+                        });
+                      }
+                    }}
+                    className="checkbox"
+                  />
+                  <span className="font-medium">Email</span>
+                </label>
+                {formData.distribution.some(d => d.type === 'email') && (
+                  <div className="space-y-2 pl-6">
+                    <input
+                      type="text"
+                      placeholder="Recipients (comma-separated)"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+                      onChange={(e) => {
+                        const dist = formData.distribution.find(d => d.type === 'email');
+                        if (dist) dist.recipients = e.target.value;
+                      }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Subject"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+                      onChange={(e) => {
+                        const dist = formData.distribution.find(d => d.type === 'email');
+                        if (dist) dist.subject = e.target.value;
+                      }}
+                    />
+                    <textarea
+                      placeholder="Email body (optional)"
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+                      onChange={(e) => {
+                        const dist = formData.distribution.find(d => d.type === 'email');
+                        if (dist) dist.body = e.target.value;
+                      }}
+                    />
+                  </div>
+                )}
               </div>
+
+              {/* Slack Distribution */}
+              <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                <label className="flex items-center gap-2 mb-3">
+                  <input
+                    type="checkbox"
+                    checked={formData.distribution.some(d => d.type === 'slack')}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData({
+                          ...formData,
+                          distribution: [...formData.distribution, {
+                            type: 'slack',
+                            enabled: true,
+                            webhookUrl: '',
+                            channel: ''
+                          }]
+                        });
+                      } else {
+                        setFormData({
+                          ...formData,
+                          distribution: formData.distribution.filter(d => d.type !== 'slack')
+                        });
+                      }
+                    }}
+                    className="checkbox"
+                  />
+                  <span className="font-medium">Slack</span>
+                </label>
+                {formData.distribution.some(d => d.type === 'slack') && (
+                  <div className="space-y-2 pl-6">
+                    <input
+                      type="text"
+                      placeholder="Webhook URL"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+                      onChange={(e) => {
+                        const dist = formData.distribution.find(d => d.type === 'slack');
+                        if (dist) dist.webhookUrl = e.target.value;
+                      }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Channel (e.g., #reports)"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+                      onChange={(e) => {
+                        const dist = formData.distribution.find(d => d.type === 'slack');
+                        if (dist) dist.channel = e.target.value;
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Teams Distribution */}
+              <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                <label className="flex items-center gap-2 mb-3">
+                  <input
+                    type="checkbox"
+                    checked={formData.distribution.some(d => d.type === 'teams')}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData({
+                          ...formData,
+                          distribution: [...formData.distribution, {
+                            type: 'teams',
+                            enabled: true,
+                            webhookUrl: ''
+                          }]
+                        });
+                      } else {
+                        setFormData({
+                          ...formData,
+                          distribution: formData.distribution.filter(d => d.type !== 'teams')
+                        });
+                      }
+                    }}
+                    className="checkbox"
+                  />
+                  <span className="font-medium">Microsoft Teams</span>
+                </label>
+                {formData.distribution.some(d => d.type === 'teams') && (
+                  <div className="space-y-2 pl-6">
+                    <input
+                      type="text"
+                      placeholder="Webhook URL"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+                      onChange={(e) => {
+                        const dist = formData.distribution.find(d => d.type === 'teams');
+                        if (dist) dist.webhookUrl = e.target.value;
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* SFTP Distribution */}
+              <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                <label className="flex items-center gap-2 mb-3">
+                  <input
+                    type="checkbox"
+                    checked={formData.distribution.some(d => d.type === 'sftp')}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData({
+                          ...formData,
+                          distribution: [...formData.distribution, {
+                            type: 'sftp',
+                            enabled: true,
+                            host: '',
+                            port: 22,
+                            username: '',
+                            path: ''
+                          }]
+                        });
+                      } else {
+                        setFormData({
+                          ...formData,
+                          distribution: formData.distribution.filter(d => d.type !== 'sftp')
+                        });
+                      }
+                    }}
+                    className="checkbox"
+                  />
+                  <span className="font-medium">SFTP</span>
+                </label>
+                {formData.distribution.some(d => d.type === 'sftp') && (
+                  <div className="space-y-2 pl-6">
+                    <input
+                      type="text"
+                      placeholder="Host"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+                      onChange={(e) => {
+                        const dist = formData.distribution.find(d => d.type === 'sftp');
+                        if (dist) dist.host = e.target.value;
+                      }}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="number"
+                        placeholder="Port (22)"
+                        defaultValue={22}
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+                        onChange={(e) => {
+                          const dist = formData.distribution.find(d => d.type === 'sftp');
+                          if (dist) dist.port = parseInt(e.target.value);
+                        }}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Username"
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+                        onChange={(e) => {
+                          const dist = formData.distribution.find(d => d.type === 'sftp');
+                          if (dist) dist.username = e.target.value;
+                        }}
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Remote path"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
+                      onChange={(e) => {
+                        const dist = formData.distribution.find(d => d.type === 'sftp');
+                        if (dist) dist.path = e.target.value;
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {formData.distribution.length === 0 && (
+                <div className="text-center text-gray-500 py-4 text-sm">
+                  Select at least one distribution channel
+                </div>
+              )}
             </div>
           )}
         </div>

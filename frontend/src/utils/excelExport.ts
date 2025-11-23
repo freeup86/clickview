@@ -160,9 +160,63 @@ export class ExcelExporter {
     chartData: any,
     sheetName: string = 'Chart Data'
   ): Promise<Buffer> {
-    // TODO: Transform chart data to tabular format
+    // Transform chart data to tabular format
     const data: any[] = [];
     const columns: any[] = [];
+
+    // Handle different chart data formats
+    if (chartData.series && Array.isArray(chartData.series)) {
+      // Time series or multi-series data
+      const categories = chartData.categories || chartData.labels || [];
+
+      // Create columns: first column for categories, then one for each series
+      columns.push({ header: chartData.categoryLabel || 'Category', key: 'category', width: 20 });
+      chartData.series.forEach((series: any, index: number) => {
+        columns.push({
+          header: series.name || `Series ${index + 1}`,
+          key: `series_${index}`,
+          width: 15,
+          format: series.format || 'number',
+        });
+      });
+
+      // Create rows
+      categories.forEach((category: any, catIndex: number) => {
+        const row: any = { category };
+        chartData.series.forEach((series: any, seriesIndex: number) => {
+          row[`series_${seriesIndex}`] = series.data[catIndex];
+        });
+        data.push(row);
+      });
+    } else if (chartData.data && Array.isArray(chartData.data)) {
+      // Simple data array
+      if (chartData.data.length > 0 && typeof chartData.data[0] === 'object') {
+        // Array of objects
+        const keys = Object.keys(chartData.data[0]);
+        keys.forEach(key => {
+          columns.push({ header: key, key, width: 15 });
+        });
+        data.push(...chartData.data);
+      } else {
+        // Array of primitives
+        columns.push({ header: 'Value', key: 'value', width: 15 });
+        chartData.data.forEach((value: any) => {
+          data.push({ value });
+        });
+      }
+    } else if (chartData.labels && chartData.values) {
+      // Label-value pairs (pie chart, donut, etc.)
+      columns.push(
+        { header: 'Label', key: 'label', width: 20 },
+        { header: 'Value', key: 'value', width: 15, format: 'number' }
+      );
+      chartData.labels.forEach((label: string, index: number) => {
+        data.push({
+          label,
+          value: chartData.values[index],
+        });
+      });
+    }
 
     return await this.exportTable(data, columns, sheetName);
   }
@@ -250,23 +304,49 @@ export class ExcelExporter {
 
     // Add metric rows
     metrics.forEach((metric) => {
+      // Fetch actual value from dataSource
+      let metricValue = 0;
+      let comparisonValue = 0;
+
+      if (metric.dataSource && metric.dataSource.type === 'static' && metric.dataSource.data) {
+        // Extract value from static data
+        metricValue = metric.dataSource.data[metric.metric.field] || 0;
+      } else if (metric.dataSource && metric.dataSource.type === 'api' && metric.dataSource.apiEndpoint) {
+        // For API, we'd need async fetch, so use 0 as placeholder for now
+        // In real implementation, this would be fetched before calling this function
+        metricValue = 0;
+      }
+
+      // Calculate change if comparison exists
+      if (metric.comparison) {
+        comparisonValue = metric.comparison.value || 0;
+      }
+
+      const change = comparisonValue !== 0 ? ((metricValue - comparisonValue) / comparisonValue) : 0;
+
       const row = worksheet.addRow({
         label: metric.metric.label,
-        value: 0, // TODO: Fetch actual value
+        value: metricValue,
         comparison: metric.comparison?.type || 'N/A',
-        change: 0, // TODO: Calculate change
+        change: change,
       });
 
-      // Format value cell
-      row.getCell(2).numFmt = '$#,##0.00';
+      // Format value cell based on metric format
+      const valueCell = row.getCell(2);
+      if (metric.metric.format === 'currency') {
+        valueCell.numFmt = '$#,##0.00';
+      } else if (metric.metric.format === 'percent') {
+        valueCell.numFmt = '0.00%';
+      } else {
+        valueCell.numFmt = '#,##0.00';
+      }
 
       // Format change cell with conditional coloring
       const changeCell = row.getCell(4);
       changeCell.numFmt = '0.00%';
-      const changeValue = changeCell.value as number;
-      if (changeValue > 0) {
+      if (change > 0) {
         changeCell.font = { color: { argb: 'FF00B050' } };
-      } else if (changeValue < 0) {
+      } else if (change < 0) {
         changeCell.font = { color: { argb: 'FFFF0000' } };
       }
     });
@@ -298,16 +378,117 @@ export class ExcelExporter {
     };
     worksheet.getRow(1).font = { ...worksheet.getRow(1).font, color: { argb: 'FFFFFFFF' } };
 
-    // TODO: Fetch and add data
-    // const data = await this.fetchTableData(table);
-    // data.forEach((row) => worksheet.addRow(row));
+    // Fetch and add data
+    let data: any[] = [];
+    if (table.dataSource) {
+      if (table.dataSource.type === 'static' && table.dataSource.data) {
+        data = Array.isArray(table.dataSource.data) ? table.dataSource.data : [table.dataSource.data];
+      } else if (table.dataSource.type === 'api' && table.dataSource.apiEndpoint) {
+        // For API data, this would be fetched asynchronously before export
+        // In real implementation, pass pre-fetched data to this function
+        data = [];
+      } else if (table.dataSource.type === 'query' && table.dataSource.query) {
+        // Query results would be pre-fetched as well
+        data = [];
+      }
+    }
 
-    // Add placeholder
-    worksheet.addRow({ [columns[0].key]: 'Data loading...' });
+    if (data.length > 0) {
+      data.forEach((row) => worksheet.addRow(row));
+    } else {
+      // Add placeholder if no data
+      worksheet.addRow({ [columns[0].key]: 'No data available' });
+    }
 
     // Apply conditional formatting if configured
-    if (table.conditionalFormatting) {
-      // TODO: Apply conditional formatting rules
+    if (table.conditionalFormatting && table.conditionalFormatting.length > 0 && data.length > 0) {
+      table.conditionalFormatting.forEach((rule) => {
+        const columnIndex = columns.findIndex(col => col.key === rule.field);
+        if (columnIndex === -1) return;
+
+        const columnLetter = String.fromCharCode(65 + columnIndex);
+        const startRow = 2; // After header
+        const endRow = data.length + 1;
+        const range = `${columnLetter}${startRow}:${columnLetter}${endRow}`;
+
+        // Apply different formatting based on rule type
+        if (rule.type === 'cellValue') {
+          if (rule.operator === 'greaterThan' && rule.value !== undefined) {
+            worksheet.addConditionalFormatting({
+              ref: range,
+              rules: [{
+                type: 'cellIs',
+                operator: 'greaterThan',
+                formulae: [rule.value.toString()],
+                style: {
+                  fill: {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    bgColor: { argb: rule.style?.backgroundColor?.replace('#', 'FF') || 'FF00B050' }
+                  }
+                }
+              }]
+            });
+          } else if (rule.operator === 'lessThan' && rule.value !== undefined) {
+            worksheet.addConditionalFormatting({
+              ref: range,
+              rules: [{
+                type: 'cellIs',
+                operator: 'lessThan',
+                formulae: [rule.value.toString()],
+                style: {
+                  fill: {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    bgColor: { argb: rule.style?.backgroundColor?.replace('#', 'FF') || 'FFFF0000' }
+                  }
+                }
+              }]
+            });
+          } else if (rule.operator === 'between' && rule.min !== undefined && rule.max !== undefined) {
+            worksheet.addConditionalFormatting({
+              ref: range,
+              rules: [{
+                type: 'cellIs',
+                operator: 'between',
+                formulae: [rule.min.toString(), rule.max.toString()],
+                style: {
+                  fill: {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    bgColor: { argb: rule.style?.backgroundColor?.replace('#', 'FF') || 'FFFFFF00' }
+                  }
+                }
+              }]
+            });
+          }
+        } else if (rule.type === 'dataBar') {
+          worksheet.addConditionalFormatting({
+            ref: range,
+            rules: [{
+              type: 'dataBar',
+              minLength: 0,
+              maxLength: 100,
+              color: { argb: rule.style?.backgroundColor?.replace('#', 'FF') || 'FF638EC6' }
+            }]
+          });
+        } else if (rule.type === 'colorScale') {
+          worksheet.addConditionalFormatting({
+            ref: range,
+            rules: [{
+              type: 'colorScale',
+              cfvo: [
+                { type: 'min' },
+                { type: 'max' }
+              ],
+              color: [
+                { argb: 'FFF8696B' }, // Red for min
+                { argb: 'FF63BE7B' }  // Green for max
+              ]
+            }]
+          });
+        }
+      });
     }
   }
 
@@ -317,8 +498,105 @@ export class ExcelExporter {
   private async addChartDataSheet(chart: ChartElement): Promise<void> {
     const worksheet = this.workbook.addWorksheet(`${chart.name} Data`);
 
-    // TODO: Transform chart data to tabular format
-    worksheet.addRow(['Chart data export coming soon']);
+    // Transform chart data to tabular format
+    let chartData: any = null;
+
+    // Fetch chart data based on dataSource
+    if (chart.dataSource) {
+      if (chart.dataSource.type === 'static' && chart.dataSource.data) {
+        chartData = chart.dataSource.data;
+      } else if (chart.dataSource.type === 'api' && chart.dataSource.apiEndpoint) {
+        // API data would be pre-fetched
+        chartData = null;
+      } else if (chart.dataSource.type === 'query' && chart.dataSource.query) {
+        // Query results would be pre-fetched
+        chartData = null;
+      }
+    }
+
+    if (!chartData) {
+      worksheet.addRow(['No chart data available']);
+      return;
+    }
+
+    // Transform based on chart data structure
+    if (chartData.series && Array.isArray(chartData.series)) {
+      // Multi-series chart data
+      const categories = chartData.categories || chartData.labels || [];
+
+      // Create header row
+      const headers = [chartData.categoryLabel || 'Category'];
+      chartData.series.forEach((series: any) => {
+        headers.push(series.name || 'Series');
+      });
+      worksheet.addRow(headers);
+
+      // Style header
+      worksheet.getRow(1).font = { bold: true, size: 12 };
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF4472C4' },
+      };
+      worksheet.getRow(1).font = { ...worksheet.getRow(1).font, color: { argb: 'FFFFFFFF' } };
+
+      // Add data rows
+      categories.forEach((category: any, index: number) => {
+        const row = [category];
+        chartData.series.forEach((series: any) => {
+          row.push(series.data[index] || 0);
+        });
+        worksheet.addRow(row);
+      });
+    } else if (chartData.labels && chartData.values) {
+      // Simple label-value pairs (pie, donut, etc.)
+      worksheet.addRow(['Label', 'Value']);
+
+      // Style header
+      worksheet.getRow(1).font = { bold: true, size: 12 };
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF4472C4' },
+      };
+      worksheet.getRow(1).font = { ...worksheet.getRow(1).font, color: { argb: 'FFFFFFFF' } };
+
+      // Add data
+      chartData.labels.forEach((label: string, index: number) => {
+        worksheet.addRow([label, chartData.values[index]]);
+      });
+    } else if (Array.isArray(chartData)) {
+      // Array of objects
+      if (chartData.length > 0 && typeof chartData[0] === 'object') {
+        const keys = Object.keys(chartData[0]);
+        worksheet.addRow(keys);
+
+        // Style header
+        worksheet.getRow(1).font = { bold: true, size: 12 };
+        worksheet.getRow(1).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF4472C4' },
+        };
+        worksheet.getRow(1).font = { ...worksheet.getRow(1).font, color: { argb: 'FFFFFFFF' } };
+
+        chartData.forEach((item: any) => {
+          const row = keys.map(key => item[key]);
+          worksheet.addRow(row);
+        });
+      }
+    }
+
+    // Auto-size columns
+    worksheet.columns.forEach((column, index) => {
+      let maxLength = 10;
+      const columnLetter = String.fromCharCode(65 + index);
+      worksheet.getColumn(columnLetter).eachCell({ includeEmpty: false }, (cell) => {
+        const cellValue = cell.value?.toString() || '';
+        maxLength = Math.max(maxLength, cellValue.length);
+      });
+      column.width = Math.min(maxLength + 2, 50);
+    });
   }
 
   // ===================================================================

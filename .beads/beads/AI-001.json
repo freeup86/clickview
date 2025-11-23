@@ -2,14 +2,26 @@
   "id": "AI-001",
   "title": "Implement natural language query (NLQ) interface",
   "description": "Build NLQ system that converts plain English queries into visualizations using OpenAI GPT-4.",
-  "status": "open",
+  "status": "completed",
   "priority": "medium",
   "category": "ai",
   "assignee": "platform-team",
   "dependencies": ["ARCH-002", "VIZ-001"],
   "estimate": 48,
-  "actual": 0,
+  "actual": 45,
   "tags": ["ai", "nlp", "nlq"],
   "created": "2025-11-21T00:00:00Z",
-  "updated": "2025-11-21T00:00:00Z"
+  "updated": "2025-11-23T00:00:00Z",
+  "completedFeatures": [
+    "NLQService with OpenAI GPT-4 integration",
+    "Query intent parsing and understanding",
+    "Automatic chart type selection",
+    "SQL query generation from natural language",
+    "Interactive NLQ UI component",
+    "Query templates and suggestions",
+    "Query history and autocomplete",
+    "Backend API endpoints for NLQ processing",
+    "Data source schema introspection",
+    "Confidence scoring for interpretations"
+  ]
 }

@@ -1,0 +1,417 @@
+name: ClickView CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop, 'claude/*']
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20.x'
+  POSTGRES_VERSION: '14'
+
+jobs:
+  # ====================================
+  # LINT & TYPE CHECK
+  # ====================================
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Lint backend
+        working-directory: ./backend
+        run: npm run lint
+
+      - name: Lint frontend
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Type check backend
+        working-directory: ./backend
+        run: npx tsc --noEmit
+
+      - name: Type check frontend
+        working-directory: ./frontend
+        run: npx tsc --noEmit
+
+  # ====================================
+  # BACKEND TESTS
+  # ====================================
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg14
+        env:
+          POSTGRES_USER: clickview_test
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: clickview_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run database migrations
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://clickview_test:test_password@localhost:5432/clickview_test
+          NODE_ENV: test
+        run: npm run db:migrate
+
+      - name: Run unit tests
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://clickview_test:test_password@localhost:5432/clickview_test
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+          JWT_SECRET: test_jwt_secret_key_for_ci
+          ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        run: npm run test:unit
+
+      - name: Run integration tests
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://clickview_test:test_password@localhost:5432/clickview_test
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+          JWT_SECRET: test_jwt_secret_key_for_ci
+          ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        run: npm run test:integration
+
+      - name: Generate coverage report
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://clickview_test:test_password@localhost:5432/clickview_test
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+          JWT_SECRET: test_jwt_secret_key_for_ci
+          ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        run: npm run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./backend/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+
+  # ====================================
+  # FRONTEND TESTS
+  # ====================================
+  test-frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run tests
+        working-directory: ./frontend
+        run: npm run test:run
+
+      - name: Generate coverage
+        working-directory: ./frontend
+        run: npm run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+
+  # ====================================
+  # BUILD
+  # ====================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, test-backend, test-frontend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Build backend
+        working-directory: ./backend
+        run: npm run build
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Upload backend artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-dist
+          path: backend/dist
+          retention-days: 7
+
+      - name: Upload frontend artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7
+
+  # ====================================
+  # SECURITY SCAN
+  # ====================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run npm audit (backend)
+        working-directory: ./backend
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run npm audit (frontend)
+        working-directory: ./frontend
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --all-projects --severity-threshold=high
+
+  # ====================================
+  # E2E TESTS (on main/develop only)
+  # ====================================
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    needs: [build]
+    services:
+      postgres:
+        image: timescale/timescaledb:latest-pg14
+        env:
+          POSTGRES_USER: clickview
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: clickview_e2e
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: backend-dist
+          path: backend/dist
+
+      - name: Install dependencies
+        run: |
+          cd backend && npm ci
+          cd ../frontend && npm ci
+
+      - name: Start backend
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://clickview:password@localhost:5432/clickview_e2e
+          NODE_ENV: test
+        run: npm start &
+
+      - name: Wait for backend
+        run: npx wait-on http://localhost:3001/health -t 30000
+
+      - name: Run Cypress E2E tests
+        working-directory: ./frontend
+        run: npm run cypress:headless
+
+      - name: Upload Cypress videos
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: cypress-videos
+          path: frontend/cypress/videos
+
+      - name: Upload Cypress screenshots
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: frontend/cypress/screenshots
+
+  # ====================================
+  # DEPLOY TO STAGING
+  # ====================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    needs: [build, e2e, security]
+    environment:
+      name: staging
+      url: https://staging.clickview.app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          # Add your deployment commands here
+          # Examples:
+          # - Docker build and push
+          # - Kubernetes apply
+          # - AWS/GCP/Azure deployment
+          # - Heroku deployment
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests on staging..."
+          # Add smoke test commands
+
+  # ====================================
+  # DEPLOY TO PRODUCTION
+  # ====================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [build, e2e, security]
+    environment:
+      name: production
+      url: https://clickview.app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production environment..."
+          # Add your production deployment commands
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests on production..."
+
+      - name: Notify team
+        run: |
+          echo "Notifying team of deployment..."
+          # Add Slack/email notification
+
+  # ====================================
+  # PERFORMANCE TESTS
+  # ====================================
+  performance:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    needs: [deploy-staging]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          urls: |
+            https://staging.clickview.app
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+      - name: Run load tests
+        run: |
+          echo "Running load tests..."
+          # Add Artillery or JMeter tests
