@@ -184,6 +184,60 @@ class ApiService {
     return response.data;
   }
 
+  // Dashboard Template endpoints
+  async getDashboardTemplates(params?: {
+    category?: string;
+    tags?: string[];
+    isPublic?: boolean;
+    search?: string;
+  }) {
+    const response = await this.instance.get('/dashboards/templates', { params });
+    return response.data;
+  }
+
+  async getDashboardTemplate(id: string) {
+    const response = await this.instance.get(`/dashboards/templates/${id}`);
+    return response.data;
+  }
+
+  async createDashboardTemplate(data: {
+    dashboardId: string;
+    name: string;
+    description: string;
+    category: string;
+    tags: string[];
+    isPublic: boolean;
+    generateThumbnail: boolean;
+  }) {
+    const response = await this.instance.post('/dashboards/templates', data);
+    return response.data;
+  }
+
+  async createDashboardFromTemplate(data: {
+    templateId: string;
+    workspaceId: string;
+    name?: string;
+  }) {
+    const response = await this.instance.post('/dashboards/from-template', data);
+    return response.data;
+  }
+
+  async updateDashboardTemplate(id: string, data: Partial<{
+    name: string;
+    description: string;
+    category: string;
+    tags: string[];
+    isPublic: boolean;
+  }>) {
+    const response = await this.instance.put(`/dashboards/templates/${id}`, data);
+    return response.data;
+  }
+
+  async deleteDashboardTemplate(id: string) {
+    const response = await this.instance.delete(`/dashboards/templates/${id}`);
+    return response.data;
+  }
+
   // Widget endpoints
   async createWidget(data: {
     dashboardId: string;

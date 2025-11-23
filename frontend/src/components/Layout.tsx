@@ -34,6 +34,7 @@ const Layout: React.FC = () => {
   const navigation = [
     { name: 'Workspaces', href: '/workspaces', icon: ViewGridIcon },
     { name: 'Dashboards', href: '/dashboards', icon: ChartBarIcon },
+    { name: 'Templates', href: '/templates', icon: ClipboardListIcon },
     { name: 'Tasks', href: '/tasks', icon: ClipboardListIcon },
     { name: 'Settings', href: '/settings', icon: CogIcon },
   ];

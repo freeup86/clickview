@@ -23,6 +23,7 @@ import { ExportButton } from '../components/dashboard/ExportButton';
 import { ExportOptionsModal } from '../components/modals/ExportOptionsModal';
 import { ExportProgressBar, ExportProgress } from '../components/ExportProgressBar';
 import { DownloadManager, ExportHistoryItem } from '../components/DownloadManager';
+import { SaveAsTemplateModal } from '../components/modals/SaveAsTemplateModal';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -68,6 +69,9 @@ const DashboardPage: React.FC = () => {
   const [activeExports, setActiveExports] = useState<ExportProgress[]>([]);
   const [showDownloadManager, setShowDownloadManager] = useState(false);
   const [exportHistory, setExportHistory] = useState<ExportHistoryItem[]>([]);
+
+  // Template state
+  const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false);
 
   // Fetch dashboard data
   const { isLoading, refetch } = useQuery(
@@ -179,6 +183,29 @@ const DashboardPage: React.FC = () => {
     {
       onSuccess: () => {
         console.log('Widget positions updated');
+      },
+    }
+  );
+
+  // Save as template mutation
+  const saveAsTemplateMutation = useMutation(
+    (data: {
+      dashboardId: string;
+      name: string;
+      description: string;
+      category: string;
+      tags: string[];
+      isPublic: boolean;
+      generateThumbnail: boolean;
+    }) => apiService.createDashboardTemplate(data),
+    {
+      onSuccess: () => {
+        toast.success('Dashboard saved as template');
+        queryClient.invalidateQueries(['templates']);
+        setShowSaveAsTemplate(false);
+      },
+      onError: () => {
+        toast.error('Failed to save template');
       },
     }
   );
@@ -468,6 +495,21 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  // Handle save as template
+  const handleSaveAsTemplate = (templateData: {
+    name: string;
+    description: string;
+    category: string;
+    tags: string[];
+    isPublic: boolean;
+    generateThumbnail: boolean;
+  }) => {
+    saveAsTemplateMutation.mutate({
+      dashboardId: id!,
+      ...templateData,
+    });
+  };
+
   if (isLoading || isNewDashboard) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -515,6 +557,14 @@ const DashboardPage: React.FC = () => {
               title="View export history"
             >
               Downloads {exportHistory.length > 0 && `(${exportHistory.length})`}
+            </button>
+            <button
+              onClick={() => setShowSaveAsTemplate(true)}
+              disabled={!currentDashboard?.widgets || currentDashboard.widgets.length === 0}
+              className="btn btn-outline"
+              title="Save this dashboard as a template"
+            >
+              📑 Save as Template
             </button>
             <button
               onClick={() => setDashboardEditMode(!isDashboardEditMode)}
@@ -705,6 +755,14 @@ const DashboardPage: React.FC = () => {
         onDownload={handleDownloadExport}
         onDelete={handleDeleteExportHistory}
         onClearHistory={handleClearExportHistory}
+      />
+
+      {/* Save as Template Modal */}
+      <SaveAsTemplateModal
+        isOpen={showSaveAsTemplate}
+        onClose={() => setShowSaveAsTemplate(false)}
+        onSave={handleSaveAsTemplate}
+        dashboardName={currentDashboard?.name || 'Dashboard'}
       />
 
       {/* Export Progress Bar */}
