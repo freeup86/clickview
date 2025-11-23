@@ -24,6 +24,8 @@ import { ExportOptionsModal } from '../components/modals/ExportOptionsModal';
 import { ExportProgressBar, ExportProgress } from '../components/ExportProgressBar';
 import { DownloadManager, ExportHistoryItem } from '../components/DownloadManager';
 import { SaveAsTemplateModal } from '../components/modals/SaveAsTemplateModal';
+import { ShareDashboardModal, ShareLink } from '../components/modals/ShareDashboardModal';
+import { PermissionsManager, Permission } from '../components/PermissionsManager';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -72,6 +74,12 @@ const DashboardPage: React.FC = () => {
 
   // Template state
   const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false);
+
+  // Sharing state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showPermissionsModal, setShowPermissionsModal] = useState(false);
+  const [shareLinks, setShareLinks] = useState<ShareLink[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
 
   // Fetch dashboard data
   const { isLoading, refetch } = useQuery(
@@ -206,6 +214,125 @@ const DashboardPage: React.FC = () => {
       },
       onError: () => {
         toast.error('Failed to save template');
+      },
+    }
+  );
+
+  // Fetch share links
+  const { data: shareLinksData } = useQuery(
+    ['shareLinks', id],
+    () => apiService.getShareLinks(id!),
+    {
+      enabled: !!id && !isNewDashboard,
+      onSuccess: (data) => {
+        if (data.success && data.shareLinks) {
+          setShareLinks(data.shareLinks);
+        }
+      },
+    }
+  );
+
+  // Fetch permissions
+  const { data: permissionsData } = useQuery(
+    ['permissions', id],
+    () => apiService.getDashboardPermissions(id!),
+    {
+      enabled: !!id && !isNewDashboard,
+      onSuccess: (data) => {
+        if (data.success && data.permissions) {
+          setPermissions(data.permissions);
+        }
+      },
+    }
+  );
+
+  // Fetch available users
+  const { data: availableUsersData } = useQuery(
+    ['availableUsers', currentWorkspace?.id],
+    () => apiService.getAvailableUsers(currentWorkspace!.id, id),
+    {
+      enabled: !!currentWorkspace?.id && showPermissionsModal,
+    }
+  );
+
+  // Fetch available teams
+  const { data: availableTeamsData } = useQuery(
+    ['availableTeams', currentWorkspace?.id],
+    () => apiService.getAvailableTeams(currentWorkspace!.id, id),
+    {
+      enabled: !!currentWorkspace?.id && showPermissionsModal,
+    }
+  );
+
+  // Create share link mutation
+  const createShareLinkMutation = useMutation(
+    (data: { expiresIn?: number; password?: string; permission: 'view' | 'edit' | 'admin' }) =>
+      apiService.createShareLink(id!, data),
+    {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries(['shareLinks', id]);
+        return data.shareLink;
+      },
+      onError: () => {
+        toast.error('Failed to create share link');
+      },
+    }
+  );
+
+  // Revoke share link mutation
+  const revokeShareLinkMutation = useMutation(
+    (linkId: string) => apiService.revokeShareLink(linkId),
+    {
+      onSuccess: () => {
+        toast.success('Share link revoked');
+        queryClient.invalidateQueries(['shareLinks', id]);
+      },
+      onError: () => {
+        toast.error('Failed to revoke share link');
+      },
+    }
+  );
+
+  // Add permission mutation
+  const addPermissionMutation = useMutation(
+    (data: { userId?: string; teamId?: string; role: 'viewer' | 'editor' | 'admin' }) =>
+      apiService.addDashboardPermission(id!, data),
+    {
+      onSuccess: () => {
+        toast.success('Permission added');
+        queryClient.invalidateQueries(['permissions', id]);
+      },
+      onError: () => {
+        toast.error('Failed to add permission');
+      },
+    }
+  );
+
+  // Update permission mutation
+  const updatePermissionMutation = useMutation(
+    ({ permissionId, role }: { permissionId: string; role: 'viewer' | 'editor' | 'admin' }) =>
+      apiService.updateDashboardPermission(permissionId, role),
+    {
+      onSuccess: () => {
+        toast.success('Permission updated');
+        queryClient.invalidateQueries(['permissions', id]);
+      },
+      onError: () => {
+        toast.error('Failed to update permission');
+      },
+    }
+  );
+
+  // Remove permission mutation
+  const removePermissionMutation = useMutation(
+    (permissionId: string) => apiService.removeDashboardPermission(permissionId),
+    {
+      onSuccess: () => {
+        toast.success('Permission removed');
+        queryClient.invalidateQueries(['permissions', id]);
+      },
+      onError: () => {
+        toast.error('Failed to remove permission');
       },
     }
   );
@@ -510,6 +637,46 @@ const DashboardPage: React.FC = () => {
     });
   };
 
+  // Handle create share link
+  const handleCreateShareLink = async (data: {
+    expiresIn?: number;
+    password?: string;
+    permission: 'view' | 'edit' | 'admin';
+  }) => {
+    const result = await createShareLinkMutation.mutateAsync(data);
+    return result.shareLink;
+  };
+
+  // Handle revoke share link
+  const handleRevokeShareLink = (linkId: string) => {
+    revokeShareLinkMutation.mutate(linkId);
+  };
+
+  // Handle copy link to clipboard
+  const handleCopyLink = (url: string) => {
+    navigator.clipboard.writeText(url);
+    toast.success('Link copied to clipboard');
+  };
+
+  // Handle add permission
+  const handleAddPermission = (data: {
+    userId?: string;
+    teamId?: string;
+    role: 'viewer' | 'editor' | 'admin';
+  }) => {
+    addPermissionMutation.mutate(data);
+  };
+
+  // Handle update permission
+  const handleUpdatePermission = (permissionId: string, role: 'viewer' | 'editor' | 'admin') => {
+    updatePermissionMutation.mutate({ permissionId, role });
+  };
+
+  // Handle remove permission
+  const handleRemovePermission = (permissionId: string) => {
+    removePermissionMutation.mutate(permissionId);
+  };
+
   if (isLoading || isNewDashboard) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -565,6 +732,20 @@ const DashboardPage: React.FC = () => {
               title="Save this dashboard as a template"
             >
               📑 Save as Template
+            </button>
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="btn btn-outline"
+              title="Share this dashboard"
+            >
+              🔗 Share
+            </button>
+            <button
+              onClick={() => setShowPermissionsModal(true)}
+              className="btn btn-outline"
+              title="Manage user and team permissions"
+            >
+              👥 Permissions
             </button>
             <button
               onClick={() => setDashboardEditMode(!isDashboardEditMode)}
@@ -763,6 +944,33 @@ const DashboardPage: React.FC = () => {
         onClose={() => setShowSaveAsTemplate(false)}
         onSave={handleSaveAsTemplate}
         dashboardName={currentDashboard?.name || 'Dashboard'}
+      />
+
+      {/* Share Dashboard Modal */}
+      <ShareDashboardModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        dashboardId={id!}
+        dashboardName={currentDashboard?.name || 'Dashboard'}
+        existingLinks={shareLinks}
+        onCreateLink={handleCreateShareLink}
+        onRevokeLink={handleRevokeShareLink}
+        onCopyLink={handleCopyLink}
+      />
+
+      {/* Permissions Manager Modal */}
+      <PermissionsManager
+        isOpen={showPermissionsModal}
+        onClose={() => setShowPermissionsModal(false)}
+        dashboardId={id!}
+        dashboardName={currentDashboard?.name || 'Dashboard'}
+        permissions={permissions}
+        availableUsers={availableUsersData?.users || []}
+        availableTeams={availableTeamsData?.teams || []}
+        onAddPermission={handleAddPermission}
+        onUpdatePermission={handleUpdatePermission}
+        onRemovePermission={handleRemovePermission}
+        currentUserId={availableUsersData?.currentUserId || ''}
       />
 
       {/* Export Progress Bar */}

@@ -173,6 +173,83 @@ class ApiService {
     return response.data;
   }
 
+  // Enhanced Share Link Management endpoints
+  async createShareLink(dashboardId: string, data: {
+    expiresIn?: number;
+    password?: string;
+    permission: 'view' | 'edit' | 'admin';
+  }) {
+    const response = await this.instance.post(`/dashboards/${dashboardId}/share-links`, data);
+    return response.data;
+  }
+
+  async getShareLinks(dashboardId: string) {
+    const response = await this.instance.get(`/dashboards/${dashboardId}/share-links`);
+    return response.data;
+  }
+
+  async revokeShareLink(linkId: string) {
+    const response = await this.instance.delete(`/share-links/${linkId}`);
+    return response.data;
+  }
+
+  async verifySharePassword(token: string, password: string) {
+    const response = await this.instance.post('/share-links/verify-password', {
+      token,
+      password
+    });
+    return response.data;
+  }
+
+  async updateShareLink(linkId: string, data: {
+    expiresIn?: number | null;
+    password?: string;
+    permission?: 'view' | 'edit' | 'admin';
+    isActive?: boolean;
+  }) {
+    const response = await this.instance.put(`/share-links/${linkId}`, data);
+    return response.data;
+  }
+
+  // Permission Management endpoints
+  async getDashboardPermissions(dashboardId: string) {
+    const response = await this.instance.get(`/dashboards/${dashboardId}/permissions`);
+    return response.data;
+  }
+
+  async addDashboardPermission(dashboardId: string, data: {
+    userId?: string;
+    teamId?: string;
+    role: 'viewer' | 'editor' | 'admin';
+  }) {
+    const response = await this.instance.post(`/dashboards/${dashboardId}/permissions`, data);
+    return response.data;
+  }
+
+  async updateDashboardPermission(permissionId: string, role: 'viewer' | 'editor' | 'admin') {
+    const response = await this.instance.put(`/dashboard-permissions/${permissionId}`, { role });
+    return response.data;
+  }
+
+  async removeDashboardPermission(permissionId: string) {
+    const response = await this.instance.delete(`/dashboard-permissions/${permissionId}`);
+    return response.data;
+  }
+
+  async getAvailableUsers(workspaceId: string, dashboardId?: string) {
+    const response = await this.instance.get(`/workspaces/${workspaceId}/users`, {
+      params: { dashboardId }
+    });
+    return response.data;
+  }
+
+  async getAvailableTeams(workspaceId: string, dashboardId?: string) {
+    const response = await this.instance.get(`/workspaces/${workspaceId}/teams`, {
+      params: { dashboardId }
+    });
+    return response.data;
+  }
+
   async createDashboardExport(data: {
     dashboardId: string;
     format: 'pdf' | 'excel' | 'csv' | 'powerpoint';
