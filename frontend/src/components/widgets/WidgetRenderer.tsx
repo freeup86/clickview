@@ -16,6 +16,7 @@ import GanttChart from './GanttChart';
 import BurndownChart from './BurndownChart';
 import CustomFieldSummary from './CustomFieldSummary';
 import TaskDrillDownModal from './TaskDrillDownModal';
+import { TextBlockWidget } from './TextBlockWidget';
 
 interface WidgetRendererProps {
   widget: {
@@ -100,7 +101,7 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     return cleaned;
   };
 
-  // Fetch widget data
+  // Fetch widget data (skip for text_block widgets)
   const { isLoading, isError, data } = useQuery(
     ['widget-data', widget.id, JSON.stringify(widget.data_config), JSON.stringify(globalFilters), JSON.stringify(widget.filters)],
     () => {
@@ -140,7 +141,7 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
       return apiService.getAggregatedData(params);
     },
     {
-      enabled: !!workspaceId,
+      enabled: !!workspaceId && widget.type !== 'text_block',
       refetchInterval: widget.config.refreshInterval ? widget.config.refreshInterval * 1000 : false,
       refetchOnWindowFocus: false,
       staleTime: 0, // Always treat data as stale - force fresh requests
@@ -154,25 +155,28 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     }
   );
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <LoadingSpinner size="medium" />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <p className="text-red-500 mb-2">Failed to load widget data</p>
-          <button className="btn btn-sm btn-outline" onClick={() => window.location.reload()}>
-            Retry
-          </button>
+  // Skip loading/error states for text_block widgets
+  if (widget.type !== 'text_block') {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <LoadingSpinner size="medium" />
         </div>
-      </div>
-    );
+      );
+    }
+
+    if (isError) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <p className="text-red-500 mb-2">Failed to load widget data</p>
+            <button className="btn btn-sm btn-outline" onClick={() => window.location.reload()}>
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
   }
 
   // Handle chart click for drill-down
@@ -282,7 +286,20 @@ const WidgetRenderer: React.FC<WidgetRendererProps> = ({
           
           case 'custom_field_summary':
             return <CustomFieldSummary data={widgetData} config={widget.config} />;
-          
+
+          case 'text_block':
+            return (
+              <TextBlockWidget
+                content={widget.config?.content || ''}
+                readOnly={false}
+                onSave={(content) => {
+                  // Update widget config with new content
+                  // This would typically call an API to save the widget
+                  console.log('Saving text block content:', content);
+                }}
+              />
+            );
+
           default:
             return (
               <div className="flex items-center justify-center h-full text-gray-500">

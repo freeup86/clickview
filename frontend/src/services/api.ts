@@ -250,6 +250,30 @@ class ApiService {
     return response.data;
   }
 
+  // Dashboard Comments endpoints
+  async getDashboardComments(dashboardId: string) {
+    const response = await this.instance.get(`/dashboards/${dashboardId}/comments`);
+    return response.data;
+  }
+
+  async addDashboardComment(dashboardId: string, data: {
+    content: string;
+    parentId?: string;
+  }) {
+    const response = await this.instance.post(`/dashboards/${dashboardId}/comments`, data);
+    return response.data;
+  }
+
+  async updateDashboardComment(commentId: string, content: string) {
+    const response = await this.instance.put(`/dashboard-comments/${commentId}`, { content });
+    return response.data;
+  }
+
+  async deleteDashboardComment(commentId: string) {
+    const response = await this.instance.delete(`/dashboard-comments/${commentId}`);
+    return response.data;
+  }
+
   async createDashboardExport(data: {
     dashboardId: string;
     format: 'pdf' | 'excel' | 'csv' | 'powerpoint';

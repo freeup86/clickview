@@ -21,6 +21,7 @@ const widgetTypes = [
   { id: 'gantt_chart', name: 'Gantt Chart', description: 'Task timelines', icon: '📅' },
   { id: 'burndown_chart', name: 'Burndown Chart', description: 'Sprint progress', icon: '📉' },
   { id: 'custom_field_summary', name: 'Custom Field Summary', description: 'Aggregate custom fields', icon: '📝' },
+  { id: 'text_block', name: 'Text Block', description: 'Rich text and documentation', icon: '📝' },
 ];
 
 const AddWidgetModal: React.FC<AddWidgetModalProps> = ({

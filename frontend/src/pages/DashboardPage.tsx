@@ -26,6 +26,7 @@ import { DownloadManager, ExportHistoryItem } from '../components/DownloadManage
 import { SaveAsTemplateModal } from '../components/modals/SaveAsTemplateModal';
 import { ShareDashboardModal, ShareLink } from '../components/modals/ShareDashboardModal';
 import { PermissionsManager, Permission } from '../components/PermissionsManager';
+import { DashboardComments, Comment } from '../components/dashboard/DashboardComments';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -80,6 +81,10 @@ const DashboardPage: React.FC = () => {
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
   const [shareLinks, setShareLinks] = useState<ShareLink[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
+
+  // Comments state
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
 
   // Fetch dashboard data
   const { isLoading, refetch } = useQuery(
@@ -333,6 +338,64 @@ const DashboardPage: React.FC = () => {
       },
       onError: () => {
         toast.error('Failed to remove permission');
+      },
+    }
+  );
+
+  // Fetch comments
+  const { data: commentsData } = useQuery(
+    ['comments', id],
+    () => apiService.getDashboardComments(id!),
+    {
+      enabled: !!id && !isNewDashboard,
+      onSuccess: (data) => {
+        if (data.success && data.comments) {
+          setComments(data.comments);
+        }
+      },
+    }
+  );
+
+  // Add comment mutation
+  const addCommentMutation = useMutation(
+    (data: { content: string; parentId?: string }) =>
+      apiService.addDashboardComment(id!, data),
+    {
+      onSuccess: () => {
+        toast.success('Comment added');
+        queryClient.invalidateQueries(['comments', id]);
+      },
+      onError: () => {
+        toast.error('Failed to add comment');
+      },
+    }
+  );
+
+  // Update comment mutation
+  const updateCommentMutation = useMutation(
+    ({ commentId, content }: { commentId: string; content: string }) =>
+      apiService.updateDashboardComment(commentId, content),
+    {
+      onSuccess: () => {
+        toast.success('Comment updated');
+        queryClient.invalidateQueries(['comments', id]);
+      },
+      onError: () => {
+        toast.error('Failed to update comment');
+      },
+    }
+  );
+
+  // Delete comment mutation
+  const deleteCommentMutation = useMutation(
+    (commentId: string) => apiService.deleteDashboardComment(commentId),
+    {
+      onSuccess: () => {
+        toast.success('Comment deleted');
+        queryClient.invalidateQueries(['comments', id]);
+      },
+      onError: () => {
+        toast.error('Failed to delete comment');
       },
     }
   );
@@ -677,6 +740,21 @@ const DashboardPage: React.FC = () => {
     removePermissionMutation.mutate(permissionId);
   };
 
+  // Handle add comment
+  const handleAddComment = (content: string, parentId?: string) => {
+    addCommentMutation.mutate({ content, parentId });
+  };
+
+  // Handle update comment
+  const handleUpdateComment = (commentId: string, content: string) => {
+    updateCommentMutation.mutate({ commentId, content });
+  };
+
+  // Handle delete comment
+  const handleDeleteComment = (commentId: string) => {
+    deleteCommentMutation.mutate(commentId);
+  };
+
   if (isLoading || isNewDashboard) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -746,6 +824,13 @@ const DashboardPage: React.FC = () => {
               title="Manage user and team permissions"
             >
               👥 Permissions
+            </button>
+            <button
+              onClick={() => setShowComments(true)}
+              className="btn btn-outline"
+              title="View and add comments"
+            >
+              💬 Comments {comments.length > 0 && `(${comments.length})`}
             </button>
             <button
               onClick={() => setDashboardEditMode(!isDashboardEditMode)}
@@ -971,6 +1056,20 @@ const DashboardPage: React.FC = () => {
         onUpdatePermission={handleUpdatePermission}
         onRemovePermission={handleRemovePermission}
         currentUserId={availableUsersData?.currentUserId || ''}
+      />
+
+      {/* Dashboard Comments */}
+      <DashboardComments
+        isOpen={showComments}
+        onClose={() => setShowComments(false)}
+        dashboardId={id!}
+        dashboardName={currentDashboard?.name || 'Dashboard'}
+        comments={comments}
+        onAddComment={handleAddComment}
+        onUpdateComment={handleUpdateComment}
+        onDeleteComment={handleDeleteComment}
+        currentUserId={availableUsersData?.currentUserId || ''}
+        currentUserName={availableUsersData?.currentUserName || 'Unknown User'}
       />
 
       {/* Export Progress Bar */}
