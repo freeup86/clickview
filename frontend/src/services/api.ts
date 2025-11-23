@@ -173,6 +173,17 @@ class ApiService {
     return response.data;
   }
 
+  async createDashboardExport(data: {
+    dashboardId: string;
+    format: 'pdf' | 'excel' | 'csv' | 'powerpoint';
+    options: any;
+  }) {
+    const response = await this.instance.post('/dashboards/export', data, {
+      timeout: 120000 // 2 minutes timeout for export generation
+    });
+    return response.data;
+  }
+
   // Widget endpoints
   async createWidget(data: {
     dashboardId: string;
