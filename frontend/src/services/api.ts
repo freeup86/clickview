@@ -313,6 +313,52 @@ class ApiService {
     return response.data;
   }
 
+  // Dashboard Folder endpoints
+  async getDashboardFolders(workspaceId: string) {
+    const response = await this.instance.get(`/workspaces/${workspaceId}/dashboard-folders`);
+    return response.data;
+  }
+
+  async createDashboardFolder(workspaceId: string, data: {
+    name: string;
+    parentId: string | null;
+    icon?: string;
+    color?: string;
+  }) {
+    const response = await this.instance.post(`/workspaces/${workspaceId}/dashboard-folders`, data);
+    return response.data;
+  }
+
+  async updateDashboardFolder(folderId: string, data: {
+    name?: string;
+    parentId?: string | null;
+    icon?: string;
+    color?: string;
+  }) {
+    const response = await this.instance.put(`/dashboard-folders/${folderId}`, data);
+    return response.data;
+  }
+
+  async deleteDashboardFolder(folderId: string) {
+    const response = await this.instance.delete(`/dashboard-folders/${folderId}`);
+    return response.data;
+  }
+
+  async moveDashboardToFolder(dashboardId: string, folderId: string | null) {
+    const response = await this.instance.put(`/dashboards/${dashboardId}/move`, { folderId });
+    return response.data;
+  }
+
+  async toggleDashboardFavorite(dashboardId: string) {
+    const response = await this.instance.post(`/dashboards/${dashboardId}/favorite`);
+    return response.data;
+  }
+
+  async trackDashboardView(dashboardId: string) {
+    const response = await this.instance.post(`/dashboards/${dashboardId}/view`);
+    return response.data;
+  }
+
   // Data endpoints
   async getTasks(params: {
     workspaceId: string;
