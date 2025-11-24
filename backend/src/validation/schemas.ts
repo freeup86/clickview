@@ -3,8 +3,9 @@ import Joi from 'joi';
 // Workspace schemas
 export const createWorkspaceSchema = Joi.object({
   name: Joi.string().min(1).max(255).required(),
-  apiKey: Joi.string().required(),
-  clickupTeamId: Joi.string().optional()
+  description: Joi.string().max(1000).optional().allow(''),
+  apiKey: Joi.string().optional().allow(''),
+  clickupTeamId: Joi.string().optional().allow('')
 });
 
 export const updateWorkspaceSchema = Joi.object({

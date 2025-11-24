@@ -1,0 +1,24 @@
+FROM node:18-alpine
+
+# Re-enable TLS certificate validation (override host setting)
+ENV NODE_TLS_REJECT_UNAUTHORIZED=1
+
+# Enable corepack for yarn
+RUN corepack enable
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies using yarn (more reliable than npm)
+RUN yarn install --ignore-engines
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 3000
+
+# Start development server with host flag to allow external connections
+CMD ["npm", "run", "dev", "--", "--host"]

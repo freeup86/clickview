@@ -5,7 +5,7 @@ import { XIcon } from './icons';
 interface WorkspaceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { name: string; apiKey: string }) => void;
+  onSubmit: (data: { name: string; description?: string; apiKey?: string; clickupTeamId?: string }) => void;
   workspace?: any;
 }
 
@@ -23,6 +23,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   } = useForm({
     defaultValues: {
       name: workspace?.name || '',
+      description: workspace?.description || '',
       apiKey: '',
     },
   });
@@ -31,6 +32,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
     if (workspace) {
       reset({
         name: workspace.name,
+        description: workspace.description || '',
         apiKey: '',
       });
     }
@@ -76,23 +78,37 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
           </div>
 
           <div>
+            <label htmlFor="description" className="label">
+              Description (Optional)
+            </label>
+            <textarea
+              id="description"
+              className="input"
+              placeholder="Brief description of this workspace"
+              rows={3}
+              {...register('description')}
+            />
+            {errors.description && (
+              <p className="mt-1 text-sm text-error">{errors.description.message}</p>
+            )}
+          </div>
+
+          <div>
             <label htmlFor="apiKey" className="label">
-              ClickUp API Key
+              ClickUp API Key (Optional)
             </label>
             <input
               id="apiKey"
               type="password"
               className="input"
-              placeholder={workspace ? 'Enter new API key to update' : 'pk_..........'}
-              {...register('apiKey', {
-                required: !workspace && 'API key is required',
-              })}
+              placeholder={workspace ? 'Enter new API key to update' : 'pk_.......... (optional)'}
+              {...register('apiKey')}
             />
             {errors.apiKey && (
               <p className="mt-1 text-sm text-error">{errors.apiKey.message}</p>
             )}
             <p className="mt-1 text-xs text-gray-500">
-              Get your API key from ClickUp Settings → Apps → API Token
+              Optional: Get your API key from ClickUp Settings → Apps → API Token to sync with ClickUp
             </p>
           </div>
 

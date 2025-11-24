@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { query } from '../config/database';
 import { EncryptionService } from '../config/encryption';
 import { logger } from '../config/logger';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const router = Router();
 

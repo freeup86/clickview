@@ -6,9 +6,10 @@ import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import path from 'path';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from root .env file
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -99,6 +100,19 @@ app.use('/api/auth', authRoutes); // Enterprise authentication (public + protect
 app.use('/api/authorization', authorizationRoutes); // Advanced authorization (RBAC/ABAC)
 app.use('/api/admin', adminRoutes); // Admin portal endpoints (user, org, role, audit log management)
 app.use('/api/workspaces', workspaceRoutes);
+
+// Dashboard feature routes (Week 1-7 implementation) - MUST come before main dashboard routes
+app.use('/api/dashboards/templates', dashboardTemplatesRoutes); // Template gallery
+app.use('/api/share-links', dashboardSharingRoutes); // Share link operations (verify-password, etc.)
+app.use('/api/dashboard-permissions', dashboardSharingRoutes); // Permission operations (update, delete)
+app.use('/api/dashboards', dashboardSharingRoutes); // Dashboard sharing routes (/:id/share-links, /:id/permissions)
+app.use('/api/dashboards', calculatedFieldsRoutes); // Calculated fields (includes /dashboards/:id/calculated-fields)
+app.use('/api/workspaces', dashboardFoldersRoutes); // Folders (includes /workspaces/:id/dashboard-folders)
+app.use('/api/dashboards', dashboardCommentsRoutes); // Comments (includes /dashboards/:id/comments)
+app.use('/api/dashboard-comments', dashboardCommentsRoutes); // Comment operations
+app.use('/api/exports', dashboardExportRoutes); // Export operations (GET /:id, POST /, etc.)
+
+// Main routes - must come AFTER specific dashboard routes
 app.use('/api/dashboards', dashboardRoutes);
 app.use('/api/widgets', widgetRoutes);
 app.use('/api/data', dataRoutes);
@@ -107,18 +121,6 @@ app.use('/api/tasks', tasksRoutes);
 app.use('/api/tasks', tasksSyncRoutes);
 app.use('/api/reports', reportRoutes); // Enterprise report builder
 app.use('/api/schedules', scheduleRoutes); // Report scheduling & distribution
-
-// Dashboard feature routes (Week 1-7 implementation)
-app.use('/api/dashboards/templates', dashboardTemplatesRoutes); // Template gallery
-app.use('/api/dashboards', calculatedFieldsRoutes); // Calculated fields (includes /dashboards/:id/calculated-fields)
-app.use('/api/workspaces', dashboardFoldersRoutes); // Folders (includes /workspaces/:id/dashboard-folders)
-app.use('/api/dashboards/:dashboardId', dashboardSharingRoutes); // Enhanced sharing (share-links, permissions)
-app.use('/api/share-links', dashboardSharingRoutes); // Share link operations
-app.use('/api/dashboard-permissions', dashboardSharingRoutes); // Permission operations
-app.use('/api/dashboards', dashboardCommentsRoutes); // Comments (includes /dashboards/:id/comments)
-app.use('/api/dashboard-comments', dashboardCommentsRoutes); // Comment operations
-app.use('/api/dashboards', dashboardExportRoutes); // Exports (includes /dashboards/export)
-app.use('/api/exports', dashboardExportRoutes); // Export operations
 
 // Swagger API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {

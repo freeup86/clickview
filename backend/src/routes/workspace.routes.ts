@@ -16,34 +16,42 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    const { name, apiKey, clickupTeamId } = value;
+    const { name, description, apiKey, clickupTeamId } = value;
 
-    // Encrypt the API key
-    const { encrypted, iv } = EncryptionService.encrypt(apiKey);
+    let encrypted = null;
+    let iv = null;
+    let teamId = clickupTeamId || null;
 
-    // Validate API key with ClickUp (use null for workspace ID during validation)
-    const clickup = new ClickUpService('validation', encrypted, iv);
-    const isValid = await clickup.validateApiKey();
+    // Only validate and encrypt API key if provided
+    if (apiKey && apiKey.trim() !== '') {
+      // Encrypt the API key
+      const encryptionResult = EncryptionService.encrypt(apiKey);
+      encrypted = encryptionResult.encrypted;
+      iv = encryptionResult.iv;
 
-    if (!isValid) {
-      return res.status(400).json({ error: 'Invalid ClickUp API key' });
-    }
+      // Validate API key with ClickUp
+      const clickup = new ClickUpService('validation', encrypted, iv);
+      const isValid = await clickup.validateApiKey();
 
-    // Get team ID if not provided
-    let teamId = clickupTeamId;
-    if (!teamId) {
-      const teams = await clickup.getTeams();
-      if (teams && teams.length > 0) {
-        teamId = teams[0].id;
+      if (!isValid) {
+        return res.status(400).json({ error: 'Invalid ClickUp API key' });
+      }
+
+      // Get team ID if not provided
+      if (!teamId) {
+        const teams = await clickup.getTeams();
+        if (teams && teams.length > 0) {
+          teamId = teams[0].id;
+        }
       }
     }
 
     // Create workspace in database
     const result = await query(
-      `INSERT INTO workspaces (name, clickup_team_id, encrypted_api_key, api_key_iv)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, name, clickup_team_id, is_active, created_at`,
-      [name, teamId, encrypted, iv]
+      `INSERT INTO workspaces (name, description, clickup_team_id, encrypted_api_key, api_key_iv)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, name, description, clickup_team_id, is_active, created_at`,
+      [name, description, teamId, encrypted, iv]
     );
 
     const workspace = result.rows[0];
@@ -80,7 +88,7 @@ router.get('/', async (req: Request, res: Response) => {
     }
 
     const result = await query(
-      `SELECT id, name, clickup_team_id, is_active, last_sync_at, created_at, updated_at
+      `SELECT id, name, description, clickup_team_id, is_active, last_sync_at, created_at, updated_at
        FROM workspaces
        WHERE is_active = true
        ORDER BY created_at DESC`
@@ -102,7 +110,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const result = await query(
-      `SELECT id, name, clickup_team_id, is_active, last_sync_at, created_at, updated_at
+      `SELECT id, name, description, clickup_team_id, is_active, last_sync_at, created_at, updated_at
        FROM workspaces
        WHERE id = $1`,
       [id]
@@ -170,10 +178,10 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     values.push(id);
     const updateQuery = `
-      UPDATE workspaces 
+      UPDATE workspaces
       SET ${updates.join(', ')}, updated_at = NOW()
       WHERE id = $${paramCount}
-      RETURNING id, name, clickup_team_id, is_active, last_sync_at, created_at, updated_at
+      RETURNING id, name, description, clickup_team_id, is_active, last_sync_at, created_at, updated_at
     `;
 
     const result = await query(updateQuery, values);

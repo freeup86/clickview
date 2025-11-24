@@ -3,8 +3,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 
-// Load environment variables
-dotenv.config({ path: path.join(__dirname, '../../.env') });
+// Load environment variables - must happen before Pool creation
+dotenv.config({ path: path.join(process.cwd(), '../.env') });
 
 /**
  * Enterprise-grade SSL/TLS Configuration

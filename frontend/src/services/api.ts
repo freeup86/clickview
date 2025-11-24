@@ -76,7 +76,7 @@ class ApiService {
   }
 
   // Workspace endpoints
-  async createWorkspace(data: { name: string; apiKey: string; clickupTeamId?: string }) {
+  async createWorkspace(data: { name: string; description?: string; apiKey?: string; clickupTeamId?: string }) {
     const response = await this.instance.post('/workspaces', data);
     return response.data;
   }
@@ -474,7 +474,7 @@ class ApiService {
     offset?: number;
     page?: number;
   }) {
-    const response = await this.instance.get('/data/tasks', { params });
+    const response = await this.instance.get('/tasks', { params });
     return response.data;
   }
 
