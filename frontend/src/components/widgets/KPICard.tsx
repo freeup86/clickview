@@ -18,12 +18,12 @@ const KPICard: React.FC<KPICardProps> = ({ data, config }) => {
     return (
       <div className="kpi-card items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gray-100 flex items-center justify-center">
-            <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+            <svg className="w-6 h-6" style={{ color: 'var(--text-muted)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
-          <p className="text-sm text-gray-400">No data available</p>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No data available</p>
         </div>
       </div>
     );
@@ -76,43 +76,49 @@ const KPICard: React.FC<KPICardProps> = ({ data, config }) => {
     return numValue.toLocaleString();
   };
 
-  // Color styles based on config
-  const getColorClasses = () => {
+  // Color styles based on config - ClickUp style (simple, no gradients)
+  const getColor = () => {
     switch (config.color) {
       case 'success':
-        return 'from-emerald-500 to-teal-500';
+        return '#10b981';
       case 'warning':
-        return 'from-amber-500 to-orange-500';
+        return '#f59e0b';
       case 'danger':
-        return 'from-red-500 to-rose-500';
+        return '#ef4444';
       case 'info':
-        return 'from-blue-500 to-cyan-500';
+        return '#3b82f6';
+      case 'purple':
+        return '#8b5cf6';
+      case 'pink':
+        return '#ec4899';
       default:
-        return 'from-primary-500 to-purple-500';
+        return '#7B68EE';
     }
   };
 
   return (
-    <div className="kpi-card justify-center">
+    <div className="kpi-card justify-center items-center text-center">
       <div className="w-full">
+        {/* Main Value - Large and prominent like ClickUp */}
+        <div
+          className="text-5xl lg:text-6xl font-bold tracking-tight mb-1"
+          style={{ color: getColor() }}
+        >
+          {formatValue(currentValue)}
+        </div>
+
         {/* Metric Label */}
         {config.metric && (
-          <div className="kpi-label">{config.metric}</div>
+          <div className="text-sm font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+            {config.metric}
+          </div>
         )}
 
-        {/* Value and Trend Row */}
-        <div className="flex items-end justify-between gap-4">
-          {/* Main Value */}
-          <div className={`kpi-value ${config.color ? '' : 'colored'} bg-gradient-to-r ${getColorClasses()} bg-clip-text text-transparent`}>
-            {formatValue(currentValue)}
-          </div>
-
-          {/* Trend Badge */}
-          {hasTrend && (
+        {/* Trend Badge */}
+        {hasTrend && (
+          <div className="flex items-center justify-center mt-3">
             <div
-              className={`kpi-trend ${
-                isPositive ? 'positive' : 'negative'
-              }`}
+              className={`kpi-trend ${isPositive ? 'positive' : 'negative'}`}
             >
               {isPositive ? (
                 <TrendingUpIcon className="w-3.5 h-3.5" />
@@ -120,24 +126,23 @@ const KPICard: React.FC<KPICardProps> = ({ data, config }) => {
                 <TrendingDownIcon className="w-3.5 h-3.5" />
               )}
               <span>{Math.abs(trend).toFixed(1)}%</span>
+              {config.trendPeriod && (
+                <span className="ml-1 opacity-75">vs {config.trendPeriod}</span>
+              )}
             </div>
-          )}
-        </div>
-
-        {/* Period/Comparison Text */}
-        {config.trendPeriod && (
-          <div className="kpi-period">
-            vs {config.trendPeriod}
           </div>
         )}
 
-        {/* Progress Bar (optional visual) */}
+        {/* Progress Bar for percentage values */}
         {config.format === 'percentage' && currentValue <= 100 && (
           <div className="mt-4">
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
               <div
-                className={`h-full bg-gradient-to-r ${getColorClasses()} rounded-full transition-all duration-500`}
-                style={{ width: `${Math.min(currentValue, 100)}%` }}
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(currentValue, 100)}%`,
+                  backgroundColor: getColor(),
+                }}
               />
             </div>
           </div>

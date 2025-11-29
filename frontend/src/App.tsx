@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import Layout from './components/Layout';
@@ -19,9 +19,35 @@ import { useAuth } from './contexts/AuthContext';
 import apiService from './services/api';
 import useStore from './store/useStore';
 
+// Create a simple dark mode context
+export const DarkModeContext = React.createContext({
+  isDarkMode: true,
+  toggleDarkMode: () => {},
+});
+
+export const useDarkMode = () => React.useContext(DarkModeContext);
+
 function App() {
   const { setWorkspaces, currentWorkspace } = useStore();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Dark mode state - default to dark
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const stored = localStorage.getItem('clickview-dark-mode');
+    return stored !== null ? stored === 'true' : true; // Default to dark
+  });
+
+  // Apply dark mode class to document
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('clickview-dark-mode', String(isDarkMode));
+  }, [isDarkMode]);
+
+  const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
   // Fetch workspaces on app load (only when authenticated)
   const { data: workspacesData, isLoading: workspacesLoading } = useQuery(
@@ -39,16 +65,17 @@ function App() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex items-center justify-center h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="text-center">
           <LoadingSpinner size="large" />
-          <p className="mt-4 text-gray-600">Loading ClickView...</p>
+          <p className="mt-4" style={{ color: 'var(--text-secondary)' }}>Loading ClickView...</p>
         </div>
       </div>
     );
   }
 
   return (
+    <DarkModeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
     <Routes>
       {/* Public routes */}
       <Route path="/login" element={<Login />} />
@@ -73,6 +100,7 @@ function App() {
 
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </DarkModeContext.Provider>
   );
 }
 

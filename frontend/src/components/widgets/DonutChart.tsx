@@ -50,8 +50,8 @@ const defaultStatusColors: Record<string, string> = {
 const DonutChart: React.FC<DonutChartProps> = ({ data, config, onClick }) => {
   if (!data || data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-400">
-        <svg className="w-12 h-12 mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="flex flex-col items-center justify-center h-full" style={{ color: 'var(--text-muted)' }}>
+        <svg className="w-12 h-12 mb-3" style={{ color: 'var(--text-muted)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
         </svg>

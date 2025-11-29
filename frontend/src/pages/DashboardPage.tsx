@@ -61,6 +61,35 @@ const getWidgetTypeCategory = (type: string): string => {
   return 'default';
 };
 
+// Helper to get default widget dimensions based on type
+const getDefaultWidgetSize = (type: string): { w: number; h: number; minW: number; minH: number } => {
+  switch (type) {
+    case 'kpi_card':
+      return { w: 3, h: 3, minW: 2, minH: 2 };
+    case 'donut_chart':
+    case 'pie_chart':
+      return { w: 4, h: 5, minW: 3, minH: 4 };
+    case 'bar_chart':
+    case 'line_chart':
+    case 'area_chart':
+    case 'stacked_bar_chart':
+      return { w: 6, h: 5, minW: 4, minH: 4 };
+    case 'data_table':
+      return { w: 6, h: 6, minW: 4, minH: 4 };
+    case 'gantt_chart':
+    case 'burndown_chart':
+      return { w: 8, h: 5, minW: 6, minH: 4 };
+    case 'heatmap':
+      return { w: 6, h: 6, minW: 4, minH: 4 };
+    case 'progress_bar':
+      return { w: 4, h: 2, minW: 3, minH: 2 };
+    case 'text_block':
+      return { w: 4, h: 3, minW: 2, minH: 2 };
+    default:
+      return { w: 4, h: 4, minW: 2, minH: 2 };
+  }
+};
+
 const DashboardPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -132,13 +161,18 @@ const DashboardPage: React.FC = () => {
       onSuccess: (data) => {
         if (data.success && data.dashboard) {
           setCurrentDashboard(data.dashboard);
-          const layoutItems = data.dashboard.widgets?.map((widget: Widget) => ({
-            i: widget.id,
-            x: widget.position.x || 0,
-            y: widget.position.y || 0,
-            w: widget.position.w || (widget.type === 'kpi_card' ? 3 : 6),
-            h: widget.position.h || (widget.type === 'data_table' ? 6 : 4),
-          })) || [];
+          const layoutItems = data.dashboard.widgets?.map((widget: Widget) => {
+            const defaultSize = getDefaultWidgetSize(widget.type);
+            return {
+              i: widget.id,
+              x: widget.position?.x || 0,
+              y: widget.position?.y || 0,
+              w: widget.position?.w || defaultSize.w,
+              h: widget.position?.h || defaultSize.h,
+              minW: defaultSize.minW,
+              minH: defaultSize.minH,
+            };
+          }) || [];
           setLayout(layoutItems);
         }
       },
@@ -501,14 +535,15 @@ const DashboardPage: React.FC = () => {
 
   // Handle add widget
   const handleAddWidget = (widgetConfig: any) => {
+    const defaultSize = getDefaultWidgetSize(widgetConfig.type);
     const newWidget = {
       dashboardId: id,
       ...widgetConfig,
       position: {
         x: 0,
-        y: layout.length * 3,
-        w: widgetConfig.type === 'kpi_card' ? 3 : 6,
-        h: widgetConfig.type === 'data_table' ? 6 : 4,
+        y: layout.length * 4,
+        w: defaultSize.w,
+        h: defaultSize.h,
       },
     };
     createWidgetMutation.mutate(newWidget);
@@ -771,10 +806,10 @@ const DashboardPage: React.FC = () => {
 
   if (isLoading || isNewDashboard) {
     return (
-      <div className="flex items-center justify-center h-full bg-gradient-mesh">
+      <div className="flex items-center justify-center h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="text-center">
           <LoadingSpinner size="large" />
-          <p className="mt-4 text-gray-500">Loading dashboard...</p>
+          <p className="mt-4" style={{ color: 'var(--text-muted)' }}>Loading dashboard...</p>
         </div>
       </div>
     );
@@ -782,7 +817,7 @@ const DashboardPage: React.FC = () => {
 
   if (!currentDashboard) {
     return (
-      <div className="empty-state h-full bg-gradient-mesh">
+      <div className="empty-state h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="empty-state-icon">
           <LayersIcon className="w-12 h-12" />
         </div>
@@ -800,7 +835,7 @@ const DashboardPage: React.FC = () => {
   const widgetCount = currentDashboard.widgets?.length || 0;
 
   return (
-    <div className="h-full flex flex-col bg-gradient-mesh">
+    <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
       {/* Modern Dashboard Header */}
       <header className="dashboard-header">
         <div className="dashboard-header-content">
@@ -812,7 +847,7 @@ const DashboardPage: React.FC = () => {
                 <p className="dashboard-description">{currentDashboard.description}</p>
               )}
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-400">
+            <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
               <LayersIcon className="w-4 h-4" />
               <span>{widgetCount} widget{widgetCount !== 1 ? 's' : ''}</span>
             </div>

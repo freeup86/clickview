@@ -46,7 +46,7 @@ const DashboardsPage: React.FC = () => {
 
   if (!currentWorkspace) {
     return (
-      <div className="empty-state h-full bg-gradient-mesh animate-fadeIn">
+      <div className="empty-state h-full animate-fadeIn" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="empty-state-icon">
           <ChartBarIcon className="w-12 h-12" />
         </div>
@@ -64,22 +64,24 @@ const DashboardsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full bg-gradient-mesh">
+      <div className="flex items-center justify-center h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="text-center">
           <LoadingSpinner size="large" />
-          <p className="mt-4 text-gray-500">Loading dashboards...</p>
+          <p className="mt-4" style={{ color: 'var(--text-muted)' }}>Loading dashboards...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-full bg-gradient-mesh p-6 lg:p-8">
+    <div className="min-h-full p-6 lg:p-8" style={{ backgroundColor: 'var(--bg-primary)' }}>
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboards</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            Dashboards
+          </h1>
+          <p style={{ color: 'var(--text-secondary)' }} className="mt-1">
             Visualize and track your ClickUp data in real-time
           </p>
         </div>
@@ -90,7 +92,13 @@ const DashboardsPage: React.FC = () => {
       </div>
 
       {dashboards.length === 0 ? (
-        <div className="empty-state bg-white rounded-2xl shadow-soft border border-gray-100 py-16 animate-fadeIn">
+        <div
+          className="empty-state rounded-2xl py-16 animate-fadeIn"
+          style={{
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
           <div className="empty-state-icon">
             <SparklesIcon className="w-12 h-12" />
           </div>
@@ -124,7 +132,7 @@ const DashboardsPage: React.FC = () => {
               {dashboard.description ? (
                 <p className="dashboard-card-description">{dashboard.description}</p>
               ) : (
-                <p className="dashboard-card-description text-gray-400 italic">
+                <p className="dashboard-card-description italic" style={{ color: 'var(--text-muted)' }}>
                   No description
                 </p>
               )}
@@ -146,13 +154,20 @@ const DashboardsPage: React.FC = () => {
           {/* Create New Dashboard Card */}
           <Link
             to="/dashboard/new"
-            className="dashboard-card flex flex-col items-center justify-center min-h-[200px] border-2 border-dashed border-gray-200 hover:border-primary-300 group"
-            style={{ animationDelay: `${dashboards.length * 0.05}s` }}
+            className="flex flex-col items-center justify-center min-h-[200px] rounded-xl border-2 border-dashed transition-all duration-300 hover:-translate-y-1"
+            style={{
+              borderColor: 'var(--border-color)',
+              backgroundColor: 'transparent',
+              animationDelay: `${dashboards.length * 0.05}s`,
+            }}
           >
-            <div className="w-14 h-14 rounded-2xl bg-gray-100 group-hover:bg-primary-50 flex items-center justify-center mb-4 transition-colors duration-300">
-              <PlusIcon className="w-7 h-7 text-gray-400 group-hover:text-primary-500 transition-colors duration-300" />
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors duration-300"
+              style={{ backgroundColor: 'var(--bg-tertiary)' }}
+            >
+              <PlusIcon className="w-7 h-7" style={{ color: 'var(--text-muted)' }} />
             </div>
-            <span className="text-gray-500 group-hover:text-primary-600 font-medium transition-colors duration-300">
+            <span className="font-medium transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
               New Dashboard
             </span>
           </Link>
