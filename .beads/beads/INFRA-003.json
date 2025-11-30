@@ -1,0 +1,38 @@
+{
+  "id": "INFRA-003",
+  "title": "Load Balancer and Auto-Scaling",
+  "description": "Configure production load balancer, implement auto-scaling policies, and ensure high availability architecture.",
+  "status": "done",
+  "priority": "high",
+  "category": "infrastructure",
+  "phase": 8,
+  "assignee": "devops-team",
+  "dependencies": ["INFRA-001"],
+  "estimate": 20,
+  "actual": 5,
+  "tags": ["load-balancer", "auto-scaling", "high-availability"],
+  "created": "2025-11-30T00:00:00Z",
+  "completed_at": "2025-11-30T04:00:00Z",
+  "completedFeatures": [
+    "NGINX Ingress with SSL termination",
+    "WebSocket-specific ingress configuration",
+    "Security headers (X-Frame-Options, CSP, etc.)",
+    "Rate limiting at ingress (100 rps)",
+    "HorizontalPodAutoscaler for backend (3-15 pods)",
+    "HorizontalPodAutoscaler for frontend (2-6 pods)",
+    "CPU and memory-based scaling policies",
+    "Scale up stabilization (60s) / down (300s)",
+    "Pod anti-affinity for high availability",
+    "PodDisruptionBudget (min 2 backend, 1 frontend)",
+    "Network policies for security",
+    "Rolling update strategy (maxSurge 1, maxUnavailable 0)",
+    "Kustomize overlays for staging/production"
+  ],
+  "acceptanceCriteria": [
+    "Load balancer distributes traffic evenly",
+    "Auto-scaling responds to load in < 2 minutes",
+    "Zero-downtime deployments working",
+    "WebSocket connections stable across scaling",
+    "Cost-optimized scaling policies"
+  ]
+}

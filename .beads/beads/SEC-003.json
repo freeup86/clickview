@@ -1,0 +1,34 @@
+{
+  "id": "SEC-003",
+  "title": "Implement CSRF Protection",
+  "description": "Add CSRF token protection for all web forms and state-changing API endpoints to prevent cross-site request forgery attacks.",
+  "status": "done",
+  "priority": "high",
+  "category": "security",
+  "phase": 1,
+  "assignee": "security-team",
+  "dependencies": ["AUTH-001"],
+  "estimate": 8,
+  "actual": 4,
+  "tags": ["security", "csrf", "tokens"],
+  "created": "2025-11-30T00:00:00Z",
+  "completed_at": "2025-11-30T01:00:00Z",
+  "completedFeatures": [
+    "CSRF middleware with Double Submit Cookie pattern",
+    "256-bit cryptographically secure tokens",
+    "Token rotation on each request",
+    "SameSite=Strict cookie configuration",
+    "Constant-time token comparison",
+    "Exempt paths for webhooks and health checks",
+    "API key bypass for server-to-server communication",
+    "Frontend integration with axios interceptors",
+    "CSRF token endpoint for frontend initialization"
+  ],
+  "acceptanceCriteria": [
+    "All POST/PUT/DELETE requests require valid CSRF token",
+    "Tokens are rotated on each request",
+    "Frontend automatically includes CSRF headers",
+    "Invalid tokens return 403 Forbidden",
+    "All tests pass"
+  ]
+}

@@ -1094,7 +1094,7 @@ const SelectInput: React.FC<{
       {label && <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">{label}</label>}
       <select value={value} onChange={(e) => onChange(e.target.value)} className="input">
         {options.map((option) => (
-          <key={option.value} value={option.value}>
+          <option key={option.value} value={option.value}>
             {option.label}
           </option>
         ))}

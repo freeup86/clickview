@@ -4,9 +4,17 @@ import helmet from 'helmet';
 import compression from 'compression';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
+
+// Security middleware
+import { csrfProtection, csrfTokenProvider } from './middleware/csrf.middleware';
+
+// Monitoring
+import { metricsRegistry, metricsMiddleware, businessMetrics } from './monitoring/metrics';
+import { alertingService, AlertSeverity, AlertType } from './monitoring/alerting';
 
 // Load environment variables from root .env file
 dotenv.config({ path: path.join(__dirname, '../../.env') });
@@ -64,8 +72,16 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true
 }));
+app.use(cookieParser()); // Required for CSRF protection
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// CSRF Protection for web routes
+// Provides token on GET requests, validates on POST/PUT/DELETE
+app.use(csrfTokenProvider);
+
+// Metrics collection middleware
+app.use(metricsMiddleware);
 
 // Request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -94,6 +110,18 @@ const limiter = rateLimit({
 });
 
 app.use('/api', limiter);
+
+// CSRF Protection for API routes (validates tokens on state-changing requests)
+// Applied to all API routes except those using API key authentication
+app.use('/api', csrfProtection);
+
+// CSRF token endpoint for frontend to fetch tokens
+app.get('/api/csrf-token', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    csrfToken: (req as any).csrfToken ? (req as any).csrfToken() : null
+  });
+});
 
 // API Routes
 app.use('/api/auth', authRoutes); // Enterprise authentication (public + protected)
@@ -136,7 +164,7 @@ app.get('/health', async (req: Request, res: Response) => {
   try {
     // Check database connection
     await pool.query('SELECT 1');
-    
+
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
@@ -150,6 +178,32 @@ app.get('/health', async (req: Request, res: Response) => {
       error: 'Database connection failed'
     });
   }
+});
+
+// Metrics endpoint (Prometheus format)
+app.get('/metrics', (req: Request, res: Response) => {
+  res.set('Content-Type', 'text/plain');
+  res.send(metricsRegistry.getPrometheusMetrics());
+});
+
+// Metrics endpoint (JSON format for dashboards)
+app.get('/metrics/json', (req: Request, res: Response) => {
+  res.json(metricsRegistry.getJsonMetrics());
+});
+
+// Alerts endpoint
+app.get('/alerts', (req: Request, res: Response) => {
+  const active = alertingService.getActiveAlerts();
+  res.json({
+    active_count: active.length,
+    alerts: active
+  });
+});
+
+// Alert history endpoint
+app.get('/alerts/history', (req: Request, res: Response) => {
+  const limit = parseInt(req.query.limit as string) || 100;
+  res.json(alertingService.getAlertHistory(limit));
 });
 
 // WebSocket connection for real-time updates

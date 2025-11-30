@@ -1,0 +1,33 @@
+{
+  "id": "DOC-001",
+  "title": "Complete User Documentation",
+  "description": "Create comprehensive user documentation including user manual, admin guide, and video tutorials.",
+  "status": "pending",
+  "priority": "medium",
+  "category": "documentation",
+  "phase": 9,
+  "assignee": "docs-team",
+  "dependencies": [],
+  "estimate": 40,
+  "tags": ["documentation", "user-guide", "tutorials"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Create user manual with screenshots",
+    "Write administrator guide",
+    "Create dashboard creation tutorial",
+    "Create report building tutorial",
+    "Create sharing and permissions guide",
+    "Write troubleshooting guide",
+    "Create video walkthrough tutorials",
+    "Build interactive onboarding flow",
+    "Create FAQ section",
+    "Set up knowledge base (Notion/GitBook)"
+  ],
+  "acceptanceCriteria": [
+    "All features documented with examples",
+    "Video tutorials for main workflows",
+    "Knowledge base searchable",
+    "Onboarding flow guides new users",
+    "Documentation updated with each release"
+  ]
+}

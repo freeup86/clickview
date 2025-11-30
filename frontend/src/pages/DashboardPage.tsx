@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import GridLayout from 'react-grid-layout';
@@ -10,6 +10,17 @@ import {
   TrashIcon,
   PencilIcon,
   XIcon,
+  FilterIcon,
+  DownloadIcon,
+  ShareIcon,
+  UsersIcon,
+  MessageSquareIcon,
+  LayoutIcon,
+  MoreHorizontalIcon,
+  ChevronDownIcon,
+  BookmarkIcon,
+  ClockIcon,
+  LayersIcon,
 } from '../components/icons';
 import apiService from '../services/api';
 import useStore from '../store/useStore';
@@ -41,11 +52,51 @@ interface Widget {
   data?: any;
 }
 
+// Helper to get widget type category for styling
+const getWidgetTypeCategory = (type: string): string => {
+  if (type === 'kpi_card') return 'kpi';
+  if (['bar_chart', 'line_chart', 'pie_chart', 'donut_chart', 'area_chart', 'stacked_bar_chart', 'heatmap', 'burndown_chart', 'gantt_chart'].includes(type)) return 'chart';
+  if (type === 'data_table') return 'table';
+  if (type === 'progress_bar') return 'progress';
+  return 'default';
+};
+
+// Helper to get default widget dimensions based on type
+const getDefaultWidgetSize = (type: string): { w: number; h: number; minW: number; minH: number } => {
+  switch (type) {
+    case 'kpi_card':
+      return { w: 3, h: 3, minW: 2, minH: 2 };
+    case 'donut_chart':
+    case 'pie_chart':
+      return { w: 4, h: 5, minW: 3, minH: 4 };
+    case 'bar_chart':
+    case 'line_chart':
+    case 'area_chart':
+    case 'stacked_bar_chart':
+      return { w: 6, h: 5, minW: 4, minH: 4 };
+    case 'data_table':
+      return { w: 6, h: 6, minW: 4, minH: 4 };
+    case 'gantt_chart':
+    case 'burndown_chart':
+      return { w: 8, h: 5, minW: 6, minH: 4 };
+    case 'heatmap':
+      return { w: 6, h: 6, minW: 4, minH: 4 };
+    case 'progress_bar':
+      return { w: 4, h: 2, minW: 3, minH: 2 };
+    case 'text_block':
+      return { w: 4, h: 3, minW: 2, minH: 2 };
+    default:
+      return { w: 4, h: 4, minW: 2, minH: 2 };
+  }
+};
+
 const DashboardPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isNewDashboard = id === 'new';
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(1200);
 
   const {
     currentDashboard,
@@ -65,6 +116,7 @@ const DashboardPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasInitiatedCreation, setHasInitiatedCreation] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   // Export state
   const [showExportOptions, setShowExportOptions] = useState(false);
@@ -86,26 +138,41 @@ const DashboardPage: React.FC = () => {
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
 
+  // Calculate container width for responsive grid
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth - 48); // Subtract padding
+      }
+    };
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
   // Fetch dashboard data
   const { isLoading, refetch } = useQuery(
     ['dashboard', id],
     () => apiService.getDashboard(id!),
     {
       enabled: !isNewDashboard && !!id,
-      staleTime: 0, // Always treat dashboard data as stale
-      cacheTime: 0, // Don't cache dashboard data
+      staleTime: 0,
+      cacheTime: 0,
       onSuccess: (data) => {
         if (data.success && data.dashboard) {
           setCurrentDashboard(data.dashboard);
-          // Convert widgets to layout format
-          const layoutItems = data.dashboard.widgets?.map((widget: Widget) => ({
-            i: widget.id,
-            x: widget.position.x || 0,
-            y: widget.position.y || 0,
-            w: widget.position.w || (widget.type === 'kpi_card' ? 3 : 6),
-            h: widget.position.h || (widget.type === 'data_table' ? 6 : 4),
-          })) || [];
-          console.log('Initial layout from dashboard:', layoutItems);
+          const layoutItems = data.dashboard.widgets?.map((widget: Widget) => {
+            const defaultSize = getDefaultWidgetSize(widget.type);
+            return {
+              i: widget.id,
+              x: widget.position?.x || 0,
+              y: widget.position?.y || 0,
+              w: widget.position?.w || defaultSize.w,
+              h: widget.position?.h || defaultSize.h,
+              minW: defaultSize.minW,
+              minH: defaultSize.minH,
+            };
+          }) || [];
           setLayout(layoutItems);
         }
       },
@@ -173,7 +240,6 @@ const DashboardPage: React.FC = () => {
       onSuccess: () => {
         toast.success('Widget updated');
         refetch();
-        // Also invalidate all widget data queries to force refresh
         queryClient.invalidateQueries(['widget-data']);
       },
     }
@@ -404,18 +470,13 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     if (isNewDashboard && !hasInitiatedCreation && !createDashboardMutation.isLoading) {
       setHasInitiatedCreation(true);
-      
-      // Check if we have a workspace selected
+
       if (!currentWorkspace) {
-        // Get the first available workspace or redirect to workspace creation
         const fetchWorkspaces = async () => {
           try {
             const response = await apiService.getWorkspaces();
             if (response.workspaces && response.workspaces.length > 0) {
-              // Set the first workspace as current
               setCurrentWorkspace(response.workspaces[0]);
-              
-              // Create dashboard with the fetched workspace
               const defaultDashboard = {
                 name: 'New Dashboard',
                 workspaceId: response.workspaces[0].id,
@@ -424,7 +485,6 @@ const DashboardPage: React.FC = () => {
               };
               createDashboardMutation.mutate(defaultDashboard);
             } else {
-              // No workspaces available, redirect to workspace creation
               toast.error('Please create a workspace first');
               navigate('/workspaces');
             }
@@ -435,7 +495,6 @@ const DashboardPage: React.FC = () => {
         };
         fetchWorkspaces();
       } else {
-        // We have a workspace, create the dashboard
         const defaultDashboard = {
           name: 'New Dashboard',
           workspaceId: currentWorkspace.id,
@@ -450,18 +509,12 @@ const DashboardPage: React.FC = () => {
   // Handle layout change
   const handleLayoutChange = useCallback((newLayout: any[]) => {
     setLayout(newLayout);
-    
-    // Only update widget positions in backend when in edit mode
-    // This prevents unnecessary updates that might reset positions
+
     if (isDashboardEditMode && currentDashboard?.widgets) {
       const updates = newLayout.map((item) => ({
         id: item.i,
         position: { x: item.x, y: item.y, w: item.w, h: item.h },
       }));
-      console.log('Saving layout changes:', JSON.stringify(updates.map(u => ({ 
-        id: u.id.substring(0, 8), 
-        ...u.position 
-      })), null, 2));
       batchUpdatePositionsMutation.mutate(updates);
     }
   }, [currentDashboard, isDashboardEditMode, batchUpdatePositionsMutation]);
@@ -482,14 +535,15 @@ const DashboardPage: React.FC = () => {
 
   // Handle add widget
   const handleAddWidget = (widgetConfig: any) => {
+    const defaultSize = getDefaultWidgetSize(widgetConfig.type);
     const newWidget = {
       dashboardId: id,
       ...widgetConfig,
       position: {
         x: 0,
-        y: layout.length * 3,
-        w: widgetConfig.type === 'kpi_card' ? 3 : 6,
-        h: widgetConfig.type === 'data_table' ? 6 : 4,
+        y: layout.length * 4,
+        w: defaultSize.w,
+        h: defaultSize.h,
       },
     };
     createWidgetMutation.mutate(newWidget);
@@ -497,7 +551,6 @@ const DashboardPage: React.FC = () => {
 
   // Handle widget edit
   const handleEditWidget = (widget: Widget) => {
-    // Find the fresh widget data from currentDashboard
     const freshWidget = currentDashboard?.widgets?.find((w: Widget) => w.id === widget.id);
     setEditingWidget(freshWidget || widget);
   };
@@ -525,7 +578,6 @@ const DashboardPage: React.FC = () => {
   const handleChartClick = (data: any) => {
     if (data && data.payload) {
       const clickedData = data.payload;
-      // For now, just show a message - filtering implementation can be added later
       const dayClicked = clickedData.group || clickedData.day || clickedData.week;
       toast.success(`Clicked on ${dayClicked}: Forecast=${clickedData.forecast || 0}, Actual=${clickedData.actual || 0}`);
     }
@@ -537,7 +589,6 @@ const DashboardPage: React.FC = () => {
       setSelectedExportFormat('pdf');
       setShowExportOptions(true);
     } else {
-      // Quick export with default settings
       const options = {
         format,
         orientation: 'landscape' as const,
@@ -565,14 +616,12 @@ const DashboardPage: React.FC = () => {
     toast.success('Export started');
 
     try {
-      // Call backend API to create export
       const response = await apiService.createDashboardExport({
         dashboardId: id,
         format: options.format,
         options,
       });
 
-      // Simulate progress updates (in real implementation, use WebSocket or polling)
       const progressSteps = [20, 40, 60, 80, 100];
       for (const progress of progressSteps) {
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -592,7 +641,6 @@ const DashboardPage: React.FC = () => {
         );
       }
 
-      // Mark as completed
       const downloadUrl = response.downloadUrl || `/api/exports/${exportId}/download`;
       setActiveExports((prev) =>
         prev.map((exp) =>
@@ -602,14 +650,13 @@ const DashboardPage: React.FC = () => {
         )
       );
 
-      // Add to history
       const historyItem: ExportHistoryItem = {
         id: exportId,
         dashboardId: id!,
         dashboardName: currentDashboard?.name || 'Dashboard',
         format: options.format,
         fileName: newExport.fileName!,
-        fileSize: Math.floor(Math.random() * 5000000) + 100000, // Mock size
+        fileSize: Math.floor(Math.random() * 5000000) + 100000,
         createdAt: new Date().toISOString(),
         downloadUrl,
         status: 'available',
@@ -643,16 +690,12 @@ const DashboardPage: React.FC = () => {
   };
 
   const handleDownloadExport = (exportId: string, url: string) => {
-    // Trigger download
     window.open(url, '_blank');
-
-    // Update download count in history
     setExportHistory((prev) =>
       prev.map((exp) =>
         exp.id === exportId ? { ...exp, downloadCount: exp.downloadCount + 1 } : exp
       )
     );
-
     toast.success('Download started');
   };
 
@@ -675,12 +718,9 @@ const DashboardPage: React.FC = () => {
   };
 
   const handleRetryExport = (exportId: string) => {
-    // Find the export in active exports and retry
     const failedExport = activeExports.find((exp) => exp.exportId === exportId);
     if (failedExport) {
-      // Remove failed export and create new one
       setActiveExports((prev) => prev.filter((exp) => exp.exportId !== exportId));
-      // Retry with default PDF export
       handleExport('pdf');
     }
   };
@@ -755,126 +795,206 @@ const DashboardPage: React.FC = () => {
     deleteCommentMutation.mutate(commentId);
   };
 
+  // Close more menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setShowMoreMenu(false);
+    if (showMoreMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showMoreMenu]);
+
   if (isLoading || isNewDashboard) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <LoadingSpinner size="large" />
+      <div className="flex items-center justify-center h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="text-center">
+          <LoadingSpinner size="large" />
+          <p className="mt-4" style={{ color: 'var(--text-muted)' }}>Loading dashboard...</p>
+        </div>
       </div>
     );
   }
 
   if (!currentDashboard) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-semibold mb-4">Dashboard not found</h2>
-        <button
-          onClick={() => navigate('/dashboards')}
-          className="btn btn-primary"
-        >
+      <div className="empty-state h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
+        <div className="empty-state-icon">
+          <LayersIcon className="w-12 h-12" />
+        </div>
+        <h2 className="empty-state-title">Dashboard not found</h2>
+        <p className="empty-state-description">
+          The dashboard you're looking for doesn't exist or has been deleted.
+        </p>
+        <button onClick={() => navigate('/dashboards')} className="btn btn-primary">
           Back to Dashboards
         </button>
       </div>
     );
   }
 
+  const widgetCount = currentDashboard.widgets?.length || 0;
+
   return (
-    <div className="h-full flex flex-col bg-gray-50">
-      {/* Dashboard Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{currentDashboard.name}</h1>
-            {currentDashboard.description && (
-              <p className="text-sm text-gray-500 mt-1">{currentDashboard.description}</p>
-            )}
+    <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      {/* Modern Dashboard Header */}
+      <header className="dashboard-header">
+        <div className="dashboard-header-content">
+          {/* Left: Title & Description */}
+          <div className="dashboard-title-section">
+            <div>
+              <h1 className="dashboard-title">{currentDashboard.name}</h1>
+              {currentDashboard.description && (
+                <p className="dashboard-description">{currentDashboard.description}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+              <LayersIcon className="w-4 h-4" />
+              <span>{widgetCount} widget{widgetCount !== 1 ? 's' : ''}</span>
+            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`btn ${showFilters ? 'btn-primary' : 'btn-outline'}`}
-            >
-              Filters
-            </button>
-            <ExportButton onExport={handleExport} disabled={!currentDashboard?.widgets || currentDashboard.widgets.length === 0} />
-            <button
-              onClick={() => setShowDownloadManager(true)}
-              className="btn btn-outline"
-              title="View export history"
-            >
-              Downloads {exportHistory.length > 0 && `(${exportHistory.length})`}
-            </button>
-            <button
-              onClick={() => setShowSaveAsTemplate(true)}
-              disabled={!currentDashboard?.widgets || currentDashboard.widgets.length === 0}
-              className="btn btn-outline"
-              title="Save this dashboard as a template"
-            >
-              📑 Save as Template
-            </button>
-            <button
-              onClick={() => setShowShareModal(true)}
-              className="btn btn-outline"
-              title="Share this dashboard"
-            >
-              🔗 Share
-            </button>
-            <button
-              onClick={() => setShowPermissionsModal(true)}
-              className="btn btn-outline"
-              title="Manage user and team permissions"
-            >
-              👥 Permissions
-            </button>
-            <button
-              onClick={() => setShowComments(true)}
-              className="btn btn-outline"
-              title="View and add comments"
-            >
-              💬 Comments {comments.length > 0 && `(${comments.length})`}
-            </button>
+
+          {/* Right: Action Buttons */}
+          <div className="dashboard-actions">
+            {/* Primary Action Group */}
+            <div className="dashboard-action-group">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`btn ${showFilters ? 'active' : ''}`}
+                title="Toggle filters"
+              >
+                <FilterIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">Filters</span>
+              </button>
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="btn"
+                title="Refresh data"
+              >
+                <RefreshIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
+            {/* Export & Share Group */}
+            <div className="dashboard-action-group">
+              <ExportButton onExport={handleExport} disabled={widgetCount === 0} />
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="btn"
+                title="Share dashboard"
+              >
+                <ShareIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="action-divider" />
+
+            {/* Edit Mode Toggle */}
             <button
               onClick={() => setDashboardEditMode(!isDashboardEditMode)}
               className={`btn ${isDashboardEditMode ? 'btn-primary' : 'btn-outline'}`}
             >
-              {isDashboardEditMode ? 'Done Editing' : 'Edit Layout'}
+              <LayoutIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">{isDashboardEditMode ? 'Done' : 'Edit'}</span>
             </button>
-            <button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="btn btn-outline"
-              title="Refresh data from ClickUp"
-            >
-              <RefreshIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            </button>
-            <button
-              onClick={() => {
-                queryClient.invalidateQueries();
-                refetch();
-                toast.success('Cache cleared and data refreshed');
-              }}
-              className="btn btn-outline"
-              title="Clear cache and force refresh"
-            >
-              Clear Cache
-            </button>
-            <button
-              onClick={() => setShowSettings(true)}
-              className="btn btn-outline"
-            >
-              <CogIcon className="w-4 h-4" />
-            </button>
+
+            {/* Add Widget (only in edit mode) */}
             {isDashboardEditMode && (
               <button
                 onClick={() => setShowAddWidget(true)}
                 className="btn btn-primary"
               >
-                <PlusIcon className="w-4 h-4 mr-2" />
-                Add Widget
+                <PlusIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">Add Widget</span>
               </button>
             )}
+
+            {/* More Menu */}
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMoreMenu(!showMoreMenu);
+                }}
+                className="btn btn-ghost btn-icon"
+                title="More options"
+              >
+                <MoreHorizontalIcon className="w-5 h-5" />
+              </button>
+
+              {showMoreMenu && (
+                <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => {
+                      setShowDownloadManager(true);
+                      setShowMoreMenu(false);
+                    }}
+                    className="dropdown-item"
+                  >
+                    <DownloadIcon className="w-4 h-4" />
+                    Downloads {exportHistory.length > 0 && `(${exportHistory.length})`}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowSaveAsTemplate(true);
+                      setShowMoreMenu(false);
+                    }}
+                    disabled={widgetCount === 0}
+                    className="dropdown-item"
+                  >
+                    <BookmarkIcon className="w-4 h-4" />
+                    Save as Template
+                  </button>
+                  <div className="dropdown-divider" />
+                  <button
+                    onClick={() => {
+                      setShowPermissionsModal(true);
+                      setShowMoreMenu(false);
+                    }}
+                    className="dropdown-item"
+                  >
+                    <UsersIcon className="w-4 h-4" />
+                    Permissions
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowComments(true);
+                      setShowMoreMenu(false);
+                    }}
+                    className="dropdown-item"
+                  >
+                    <MessageSquareIcon className="w-4 h-4" />
+                    Comments {comments.length > 0 && `(${comments.length})`}
+                  </button>
+                  <div className="dropdown-divider" />
+                  <button
+                    onClick={() => {
+                      queryClient.invalidateQueries();
+                      refetch();
+                      toast.success('Cache cleared');
+                      setShowMoreMenu(false);
+                    }}
+                    className="dropdown-item"
+                  >
+                    <ClockIcon className="w-4 h-4" />
+                    Clear Cache
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowSettings(true);
+                      setShowMoreMenu(false);
+                    }}
+                    className="dropdown-item"
+                  >
+                    <CogIcon className="w-4 h-4" />
+                    Settings
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Filter Panel */}
       {showFilters && (
@@ -885,47 +1005,55 @@ const DashboardPage: React.FC = () => {
         />
       )}
 
-      {/* Dashboard Grid */}
-      <div className="flex-1 p-6 overflow-auto bg-gradient-to-br from-gray-50 via-gray-50 to-indigo-50/20">
-        {currentDashboard.widgets && currentDashboard.widgets.length > 0 ? (
+      {/* Dashboard Canvas */}
+      <div ref={containerRef} className="dashboard-canvas scrollbar-thin">
+        {widgetCount > 0 ? (
           <GridLayout
             className="layout"
             layout={layout}
             cols={12}
             rowHeight={60}
-            width={1200}
+            width={containerWidth}
             isDraggable={isDashboardEditMode}
             isResizable={isDashboardEditMode}
             onLayoutChange={isDashboardEditMode ? handleLayoutChange : undefined}
             draggableHandle=".widget-drag-handle"
+            margin={[20, 20]}
           >
-            {currentDashboard.widgets.map((widget: Widget) => (
-              <div key={widget.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden border border-gray-100">
+            {currentDashboard.widgets.map((widget: Widget, index: number) => (
+              <div
+                key={widget.id}
+                className={`widget-container ${isDashboardEditMode ? 'is-editing' : ''}`}
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
                 {/* Widget Header */}
-                <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-800 widget-drag-handle cursor-move flex items-center">
-                    <span className="w-1 h-4 bg-indigo-600 rounded-full mr-2"></span>
-                    {widget.title}
-                  </h3>
+                <div className="widget-header">
+                  <div className="widget-header-title widget-drag-handle">
+                    <div className={`widget-type-indicator ${getWidgetTypeCategory(widget.type)}`} />
+                    <h3>{widget.title}</h3>
+                  </div>
                   {isDashboardEditMode && (
-                    <div className="flex items-center space-x-2">
+                    <div className="widget-actions">
                       <button
                         onClick={() => handleEditWidget(widget)}
-                        className="p-1 hover:bg-gray-100 rounded"
+                        className="widget-action-btn"
+                        title="Edit widget"
                       >
-                        <PencilIcon className="w-4 h-4 text-gray-600" />
+                        <PencilIcon className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteWidget(widget.id)}
-                        className="p-1 hover:bg-gray-100 rounded"
+                        className="widget-action-btn danger"
+                        title="Delete widget"
                       >
-                        <TrashIcon className="w-4 h-4 text-error" />
+                        <TrashIcon className="w-4 h-4" />
                       </button>
                     </div>
                   )}
                 </div>
-                {/* Widget Content */}
-                <div className="p-4 h-[calc(100%-56px)]">
+
+                {/* Widget Body */}
+                <div className={`widget-body ${widget.type === 'kpi_card' ? 'compact' : widget.type === 'data_table' ? 'large' : ''}`}>
                   <WidgetRenderer
                     widget={widget}
                     globalFilters={globalFilters}
@@ -937,28 +1065,24 @@ const DashboardPage: React.FC = () => {
             ))}
           </GridLayout>
         ) : (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="w-32 h-32 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
-                <PlusIcon className="w-16 h-16 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-medium text-gray-900 mb-2">
-                No widgets yet
-              </h3>
-              <p className="text-gray-500 mb-6">
-                Add widgets to visualize your ClickUp data
-              </p>
-              <button
-                onClick={() => {
-                  setDashboardEditMode(true);
-                  setShowAddWidget(true);
-                }}
-                className="btn btn-primary"
-              >
-                <PlusIcon className="w-4 h-4 mr-2" />
-                Add First Widget
-              </button>
+          <div className="empty-state h-full animate-fadeIn">
+            <div className="empty-state-icon">
+              <PlusIcon className="w-12 h-12" />
             </div>
+            <h3 className="empty-state-title">No widgets yet</h3>
+            <p className="empty-state-description">
+              Add widgets to visualize your ClickUp data and track your team's progress.
+            </p>
+            <button
+              onClick={() => {
+                setDashboardEditMode(true);
+                setShowAddWidget(true);
+              }}
+              className="btn btn-primary btn-lg"
+            >
+              <PlusIcon className="w-5 h-5" />
+              Add Your First Widget
+            </button>
           </div>
         )}
       </div>
@@ -999,7 +1123,6 @@ const DashboardPage: React.FC = () => {
         />
       )}
 
-      {/* Export Options Modal */}
       <ExportOptionsModal
         isOpen={showExportOptions}
         onClose={() => setShowExportOptions(false)}
@@ -1013,7 +1136,6 @@ const DashboardPage: React.FC = () => {
         initialFormat={selectedExportFormat}
       />
 
-      {/* Download Manager */}
       <DownloadManager
         isOpen={showDownloadManager}
         onClose={() => setShowDownloadManager(false)}
@@ -1023,7 +1145,6 @@ const DashboardPage: React.FC = () => {
         onClearHistory={handleClearExportHistory}
       />
 
-      {/* Save as Template Modal */}
       <SaveAsTemplateModal
         isOpen={showSaveAsTemplate}
         onClose={() => setShowSaveAsTemplate(false)}
@@ -1031,7 +1152,6 @@ const DashboardPage: React.FC = () => {
         dashboardName={currentDashboard?.name || 'Dashboard'}
       />
 
-      {/* Share Dashboard Modal */}
       <ShareDashboardModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
@@ -1043,7 +1163,6 @@ const DashboardPage: React.FC = () => {
         onCopyLink={handleCopyLink}
       />
 
-      {/* Permissions Manager Modal */}
       <PermissionsManager
         isOpen={showPermissionsModal}
         onClose={() => setShowPermissionsModal(false)}
@@ -1058,7 +1177,6 @@ const DashboardPage: React.FC = () => {
         currentUserId={availableUsersData?.currentUserId || ''}
       />
 
-      {/* Dashboard Comments */}
       <DashboardComments
         isOpen={showComments}
         onClose={() => setShowComments(false)}
@@ -1072,7 +1190,6 @@ const DashboardPage: React.FC = () => {
         currentUserName={availableUsersData?.currentUserName || 'Unknown User'}
       />
 
-      {/* Export Progress Bar */}
       <ExportProgressBar
         exports={activeExports}
         onDismiss={handleDismissExport}

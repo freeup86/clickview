@@ -4,6 +4,8 @@
  * Tools for monitoring and optimizing application performance
  */
 
+import * as React from 'react';
+
 /**
  * Measure the execution time of a function
  */
@@ -164,11 +166,10 @@ export function lazyLoadComponent<T extends React.ComponentType<any>>(
 ) {
   const LazyComponent = React.lazy(importFn);
 
-  return (props: React.ComponentProps<T>) => (
-    <React.Suspense fallback={fallback}>
-      <LazyComponent {...props} />
-    </React.Suspense>
-  );
+  return (props: React.ComponentProps<T>) =>
+    React.createElement(
+      React.Suspense,
+      { fallback },
+      React.createElement(LazyComponent, props)
+    );
 }
-
-import * as React from 'react';

@@ -2,22 +2,35 @@
   "id": "AUTH-002",
   "title": "Implement RBAC and ABAC authorization",
   "description": "Build role-based and attribute-based access control with row-level and column-level security.",
-  "status": "open",
+  "status": "done",
   "priority": "high",
   "category": "authorization",
+  "phase": 1,
   "assignee": "backend-team",
   "dependencies": ["AUTH-001"],
   "estimate": 32,
-  "actual": 0,
+  "actual": 35,
   "tags": ["authorization", "rbac", "abac", "security"],
   "created": "2025-11-21T00:00:00Z",
-  "updated": "2025-11-21T00:00:00Z",
-  "notes": [
-    "Define roles: admin, manager, analyst, viewer",
-    "Implement permissions matrix",
-    "Row-level security for multi-tenancy",
-    "Column-level security for sensitive data",
-    "Dynamic data masking",
-    "Policy engine for attribute-based rules"
+  "completed_at": "2025-11-30T01:00:00Z",
+  "completedFeatures": [
+    "RBAC with roles: admin, manager, analyst, viewer",
+    "ABAC policy engine with attribute-based rules",
+    "Row-Level Security (RLS) for multi-tenancy",
+    "Column-Level Security (CLS) for sensitive data",
+    "Dynamic data masking (9 types)",
+    "Permission-based rate limiting (premium vs standard)",
+    "Authorization context building middleware",
+    "Resource-level permission checks",
+    "Sensitivity-based access control",
+    "Ownership enforcement",
+    "Authorization decision audit logging"
+  ],
+  "acceptanceCriteria": [
+    "Roles defined with hierarchical permissions",
+    "ABAC policies can be configured dynamically",
+    "RLS filters data by organization/user",
+    "CLS masks sensitive columns based on role",
+    "Audit trail for all authorization decisions"
   ]
 }

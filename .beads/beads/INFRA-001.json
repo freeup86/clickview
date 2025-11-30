@@ -1,0 +1,40 @@
+{
+  "id": "INFRA-001",
+  "title": "Monitoring and Alerting Setup",
+  "description": "Implement comprehensive monitoring with metrics collection, alerting rules, and production issue detection.",
+  "status": "done",
+  "priority": "critical",
+  "category": "infrastructure",
+  "phase": 8,
+  "assignee": "devops-team",
+  "dependencies": [],
+  "estimate": 24,
+  "actual": 10,
+  "tags": ["monitoring", "alerting", "observability"],
+  "created": "2025-11-30T00:00:00Z",
+  "completed_at": "2025-11-30T02:00:00Z",
+  "completedFeatures": [
+    "MetricsRegistry for counters, gauges, and histograms",
+    "Prometheus-format metrics endpoint (/metrics)",
+    "JSON metrics endpoint for dashboards (/metrics/json)",
+    "HTTP request metrics (total, duration, errors, response size)",
+    "Memory and process uptime metrics",
+    "Business metrics helpers (dashboard views, report generation, cache, DB queries)",
+    "AlertingService with configurable rules",
+    "Alert severity levels (info, warning, error, critical)",
+    "Alert types (system, security, performance, availability, business)",
+    "Default alert rules (error rate, response time, memory, DB/Redis health)",
+    "Multi-channel notifications (log, webhook, email)",
+    "Alert acknowledgment and resolution tracking",
+    "Active alerts endpoint (/alerts)",
+    "Alert history endpoint (/alerts/history)",
+    "Alert cooldown to prevent spam"
+  ],
+  "acceptanceCriteria": [
+    "All services have APM instrumentation",
+    "Errors automatically tracked and alerted",
+    "Logs centralized and searchable",
+    "Dashboards show real-time health",
+    "On-call team receives alerts within 1 minute"
+  ]
+}

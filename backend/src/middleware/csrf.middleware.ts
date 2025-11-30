@@ -79,29 +79,45 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
 
   // Validate tokens exist
   if (!cookieToken) {
-    return res.status(403).json({
+    res.status(403).json({
       success: false,
       error: 'CSRF cookie not found',
       code: 'CSRF_COOKIE_MISSING',
     });
+    return;
   }
 
   if (!requestToken) {
-    return res.status(403).json({
+    res.status(403).json({
       success: false,
       error: 'CSRF token not found in request',
       code: 'CSRF_TOKEN_MISSING',
       hint: `Include token in ${CSRF_HEADER_NAME} header or ${CSRF_FORM_FIELD} field`,
     });
+    return;
   }
 
   // Validate tokens match (constant-time comparison)
-  if (!crypto.timingSafeEqual(Buffer.from(cookieToken), Buffer.from(requestToken))) {
-    return res.status(403).json({
+  try {
+    const cookieBuffer = Buffer.from(cookieToken);
+    const requestBuffer = Buffer.from(requestToken);
+
+    if (cookieBuffer.length !== requestBuffer.length ||
+        !crypto.timingSafeEqual(cookieBuffer, requestBuffer)) {
+      res.status(403).json({
+        success: false,
+        error: 'Invalid CSRF token',
+        code: 'CSRF_TOKEN_INVALID',
+      });
+      return;
+    }
+  } catch {
+    res.status(403).json({
       success: false,
-      error: 'Invalid CSRF token',
+      error: 'Invalid CSRF token format',
       code: 'CSRF_TOKEN_INVALID',
     });
+    return;
   }
 
   // Token is valid, generate new token for next request (token rotation)
