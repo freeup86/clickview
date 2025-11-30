@@ -1,0 +1,123 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: clickview-backend-network-policy
+  namespace: clickview
+spec:
+  podSelector:
+    matchLabels:
+      app: clickview
+      component: backend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3001
+
+    # Allow traffic from frontend
+    - from:
+        - podSelector:
+            matchLabels:
+              app: clickview
+              component: frontend
+      ports:
+        - protocol: TCP
+          port: 3001
+
+    # Allow traffic from other backend pods (for cluster communication)
+    - from:
+        - podSelector:
+            matchLabels:
+              app: clickview
+              component: backend
+      ports:
+        - protocol: TCP
+          port: 3001
+
+    # Allow Prometheus scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 3001
+
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+
+    # Allow database access
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    # Allow Redis access
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+      ports:
+        - protocol: TCP
+          port: 6379
+
+    # Allow external HTTPS (for ClickUp API, OpenAI, etc.)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: clickview-frontend-network-policy
+  namespace: clickview
+spec:
+  podSelector:
+    matchLabels:
+      app: clickview
+      component: frontend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 80
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+
+    # Allow traffic to backend
+    - to:
+        - podSelector:
+            matchLabels:
+              app: clickview
+              component: backend
+      ports:
+        - protocol: TCP
+          port: 3001

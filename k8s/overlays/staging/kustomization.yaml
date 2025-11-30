@@ -1,0 +1,96 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: clickview-staging
+
+resources:
+  - ../../base
+
+namePrefix: staging-
+
+commonLabels:
+  environment: staging
+
+patches:
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: clickview-backend
+      spec:
+        replicas: 2
+    target:
+      kind: Deployment
+      name: clickview-backend
+
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: clickview-frontend
+      spec:
+        replicas: 1
+    target:
+      kind: Deployment
+      name: clickview-frontend
+
+  - patch: |-
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: clickview-backend-hpa
+      spec:
+        minReplicas: 2
+        maxReplicas: 5
+    target:
+      kind: HorizontalPodAutoscaler
+      name: clickview-backend-hpa
+
+  - patch: |-
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: clickview-ingress
+      spec:
+        rules:
+          - host: staging.clickview.app
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: staging-clickview-frontend
+                      port:
+                        number: 80
+          - host: staging-api.clickview.app
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: staging-clickview-backend
+                      port:
+                        number: 3001
+        tls:
+          - hosts:
+              - staging.clickview.app
+              - staging-api.clickview.app
+            secretName: staging-clickview-tls
+    target:
+      kind: Ingress
+      name: clickview-ingress
+
+configMapGenerator:
+  - name: clickview-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=debug
+      - NODE_ENV=staging
+
+images:
+  - name: clickview/backend
+    newTag: staging
+  - name: clickview/frontend
+    newTag: staging

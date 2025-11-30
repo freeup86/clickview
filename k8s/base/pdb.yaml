@@ -1,0 +1,23 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: clickview-backend-pdb
+  namespace: clickview
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: clickview
+      component: backend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: clickview-frontend-pdb
+  namespace: clickview
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: clickview
+      component: frontend

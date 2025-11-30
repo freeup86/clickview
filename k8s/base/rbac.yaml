@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: clickview-backend
+  namespace: clickview
+  labels:
+    app: clickview
+    component: backend
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: clickview-backend-role
+  namespace: clickview
+rules:
+  # Allow reading configmaps and secrets
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+
+  # Allow reading pod info for health checks
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: clickview-backend-rolebinding
+  namespace: clickview
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: clickview-backend-role
+subjects:
+  - kind: ServiceAccount
+    name: clickview-backend
+    namespace: clickview
