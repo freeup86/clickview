@@ -2,7 +2,7 @@
   "id": "INFRA-004",
   "title": "Infrastructure as Code",
   "description": "Implement Terraform or CloudFormation for all infrastructure, enabling reproducible deployments and version control.",
-  "status": "pending",
+  "status": "done",
   "priority": "medium",
   "category": "infrastructure",
   "phase": 8,
@@ -11,6 +11,7 @@
   "estimate": 32,
   "tags": ["terraform", "infrastructure", "iac"],
   "created": "2025-11-30T00:00:00Z",
+  "completed": "2025-11-30T00:00:00Z",
   "tasks": [
     "Set up Terraform project structure",
     "Define VPC and networking resources",
@@ -29,5 +30,31 @@
     "Infrastructure changes via PR review",
     "State properly managed and locked",
     "Documentation complete"
-  ]
+  ],
+  "implementation": {
+    "files": [
+      "terraform/main.tf",
+      "terraform/variables.tf",
+      "terraform/outputs.tf",
+      "terraform/Makefile",
+      "terraform/environments/staging.tfvars",
+      "terraform/environments/production.tfvars",
+      "terraform/bootstrap/main.tf"
+    ],
+    "features": [
+      "Complete Terraform AWS infrastructure",
+      "VPC with public/private/database subnets",
+      "EKS cluster with managed node groups (general + spot)",
+      "RDS PostgreSQL with read replicas (production)",
+      "ElastiCache Redis with cluster mode",
+      "CloudFront CDN distribution",
+      "AWS WAF with managed rule sets",
+      "S3 buckets for backups and assets",
+      "Secrets Manager for credentials",
+      "CloudWatch alarms and SNS alerting",
+      "Environment-specific tfvars (staging/production)",
+      "State management with S3 + DynamoDB locking",
+      "Makefile for common operations"
+    ]
+  }
 }
