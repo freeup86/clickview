@@ -1,0 +1,32 @@
+{
+  "id": "COMPLY-003",
+  "title": "Legal Documents and SLAs",
+  "description": "Create all required legal documents including Terms of Service, SLAs, and acceptable use policies.",
+  "status": "pending",
+  "priority": "medium",
+  "category": "compliance",
+  "phase": 9,
+  "assignee": "legal-team",
+  "dependencies": [],
+  "estimate": 16,
+  "tags": ["legal", "sla", "terms"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Create Terms of Service",
+    "Define Service Level Agreements",
+    "Create acceptable use policy",
+    "Write cookie policy",
+    "Create data processing agreement",
+    "Define support response times",
+    "Create subscription agreement",
+    "Document refund policy",
+    "Get legal review"
+  ],
+  "acceptanceCriteria": [
+    "All legal documents published",
+    "SLAs defined and measurable",
+    "Documents legally reviewed",
+    "Policies accessible from footer",
+    "Version control for document updates"
+  ]
+}

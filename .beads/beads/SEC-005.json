@@ -1,0 +1,31 @@
+{
+  "id": "SEC-005",
+  "title": "Implement Encryption at Rest",
+  "description": "Configure database encryption at rest and implement application-level encryption for sensitive data fields.",
+  "status": "pending",
+  "priority": "medium",
+  "category": "security",
+  "phase": 1,
+  "assignee": "security-team",
+  "dependencies": ["SEC-004"],
+  "estimate": 12,
+  "tags": ["security", "encryption", "data-protection"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Configure PostgreSQL encryption at rest",
+    "Implement field-level encryption for PII",
+    "Create encryption key management system",
+    "Add encrypted backup procedures",
+    "Implement key rotation strategy",
+    "Create encryption utilities library",
+    "Add encryption tests",
+    "Document encryption procedures"
+  ],
+  "acceptanceCriteria": [
+    "All database files encrypted at rest",
+    "PII fields encrypted at application level",
+    "Key rotation possible without downtime",
+    "Encrypted backups working",
+    "Performance impact < 5%"
+  ]
+}

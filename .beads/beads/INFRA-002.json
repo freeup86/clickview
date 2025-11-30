@@ -1,0 +1,33 @@
+{
+  "id": "INFRA-002",
+  "title": "Backup and Disaster Recovery",
+  "description": "Implement automated backup procedures, point-in-time recovery, and disaster recovery plan with tested procedures.",
+  "status": "pending",
+  "priority": "critical",
+  "category": "infrastructure",
+  "phase": 8,
+  "assignee": "devops-team",
+  "dependencies": [],
+  "estimate": 20,
+  "tags": ["backup", "disaster-recovery", "reliability"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Configure automated daily database backups",
+    "Implement point-in-time recovery (PITR)",
+    "Set up cross-region backup replication",
+    "Create disaster recovery plan document",
+    "Test restore procedures quarterly",
+    "Configure backup monitoring and alerts",
+    "Implement backup encryption",
+    "Define RTO (< 4 hours) and RPO (< 1 hour)",
+    "Create runbook for disaster scenarios",
+    "Test full disaster recovery procedure"
+  ],
+  "acceptanceCriteria": [
+    "Daily automated backups running",
+    "PITR working for last 7 days",
+    "Backups replicated to secondary region",
+    "Restore tested and documented",
+    "RTO and RPO targets achievable"
+  ]
+}

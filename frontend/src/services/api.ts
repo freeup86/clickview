@@ -3,6 +3,32 @@ import toast from 'react-hot-toast';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
+// CSRF token configuration
+const CSRF_HEADER_NAME = 'X-XSRF-TOKEN';
+const CSRF_COOKIE_NAME = 'XSRF-TOKEN';
+
+/**
+ * Get CSRF token from cookie
+ */
+function getCsrfTokenFromCookie(): string | null {
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === CSRF_COOKIE_NAME) {
+      return decodeURIComponent(value);
+    }
+  }
+  return null;
+}
+
+/**
+ * Check if method requires CSRF protection
+ */
+function requiresCsrfProtection(method: string): boolean {
+  const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
+  return !safeMethods.includes(method.toUpperCase());
+}
+
 class ApiService {
   private instance: AxiosInstance;
 
@@ -10,12 +36,27 @@ class ApiService {
     this.instance = axios.create({
       baseURL: API_BASE_URL,
       timeout: 30000,
+      withCredentials: true, // Required for CSRF cookies
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
     this.setupInterceptors();
+    // Fetch initial CSRF token
+    this.initializeCsrfToken();
+  }
+
+  /**
+   * Initialize CSRF token by making a GET request
+   */
+  private async initializeCsrfToken() {
+    try {
+      await this.instance.get('/csrf-token');
+    } catch (error) {
+      // Silent fail - token will be fetched on first request
+      console.debug('CSRF token initialization skipped');
+    }
   }
 
   private setupInterceptors() {
@@ -27,6 +68,15 @@ class ApiService {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+
+        // Add CSRF token for state-changing requests
+        if (config.method && requiresCsrfProtection(config.method)) {
+          const csrfToken = getCsrfTokenFromCookie();
+          if (csrfToken) {
+            config.headers[CSRF_HEADER_NAME] = csrfToken;
+          }
+        }
+
         return config;
       },
       (error) => {

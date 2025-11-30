@@ -1,0 +1,33 @@
+{
+  "id": "PERF-001",
+  "title": "Implement Redis Caching Layer",
+  "description": "Build comprehensive Redis caching for API responses, session data, and computed values with proper cache invalidation.",
+  "status": "pending",
+  "priority": "high",
+  "category": "performance",
+  "phase": 7,
+  "assignee": "backend-team",
+  "dependencies": ["SEC-004"],
+  "estimate": 24,
+  "tags": ["performance", "redis", "caching"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Design caching strategy for all endpoints",
+    "Implement cache middleware for Express",
+    "Add caching to dashboard queries",
+    "Add caching to report data",
+    "Add caching to user permissions",
+    "Implement cache invalidation patterns",
+    "Add cache headers for HTTP responses",
+    "Create cache warming procedures",
+    "Monitor cache hit rates",
+    "Document caching patterns"
+  ],
+  "acceptanceCriteria": [
+    "Cache hit rate > 80% for common queries",
+    "Dashboard load time reduced by 50%",
+    "Cache invalidation works correctly",
+    "No stale data issues",
+    "Memory usage within limits"
+  ]
+}

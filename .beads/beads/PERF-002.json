@@ -1,0 +1,32 @@
+{
+  "id": "PERF-002",
+  "title": "Database Query Optimization",
+  "description": "Optimize all database queries, add necessary indexes, and implement query profiling for production monitoring.",
+  "status": "pending",
+  "priority": "high",
+  "category": "performance",
+  "phase": 7,
+  "assignee": "backend-team",
+  "dependencies": [],
+  "estimate": 20,
+  "tags": ["performance", "database", "optimization"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Profile all slow queries (> 100ms)",
+    "Add missing indexes based on query patterns",
+    "Optimize N+1 queries with DataLoader",
+    "Implement query pagination everywhere",
+    "Add database query logging",
+    "Optimize TimescaleDB continuous aggregates",
+    "Review and optimize JOIN operations",
+    "Implement read replicas for reporting",
+    "Create query performance dashboard"
+  ],
+  "acceptanceCriteria": [
+    "All queries complete in < 100ms",
+    "No N+1 query patterns",
+    "Indexes cover all common query patterns",
+    "Query monitoring in production",
+    "Read/write separation working"
+  ]
+}

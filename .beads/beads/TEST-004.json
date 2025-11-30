@@ -1,0 +1,32 @@
+{
+  "id": "TEST-004",
+  "title": "Performance and Load Testing",
+  "description": "Implement comprehensive performance testing including load tests, stress tests, and memory leak detection.",
+  "status": "pending",
+  "priority": "high",
+  "category": "testing",
+  "phase": 6,
+  "assignee": "qa-team",
+  "dependencies": ["TEST-003"],
+  "estimate": 24,
+  "tags": ["testing", "performance", "load-testing"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Set up k6 or Artillery for load testing",
+    "Create load test for 100 concurrent users",
+    "Create stress test for maximum connections",
+    "Implement memory leak detection tests",
+    "Create database query performance tests",
+    "Profile API response times",
+    "Test WebSocket subscription performance",
+    "Document performance baselines",
+    "Configure performance test alerts"
+  ],
+  "acceptanceCriteria": [
+    "System handles 100 concurrent users",
+    "API response time < 200ms (p95)",
+    "No memory leaks detected",
+    "Database queries < 100ms average",
+    "WebSocket handles 1000+ connections"
+  ]
+}

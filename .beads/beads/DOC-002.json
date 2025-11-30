@@ -1,0 +1,33 @@
+{
+  "id": "DOC-002",
+  "title": "Complete Developer Documentation",
+  "description": "Create comprehensive developer documentation including API reference, architecture guide, and contributing guidelines.",
+  "status": "pending",
+  "priority": "medium",
+  "category": "documentation",
+  "phase": 9,
+  "assignee": "docs-team",
+  "dependencies": [],
+  "estimate": 32,
+  "tags": ["documentation", "api", "developer"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Generate OpenAPI/Swagger documentation",
+    "Create GraphQL schema documentation",
+    "Write architecture decision records (ADRs)",
+    "Create local development setup guide",
+    "Write contributing guidelines",
+    "Document coding standards",
+    "Create testing guide",
+    "Write deployment procedures",
+    "Document database schema",
+    "Create integration examples"
+  ],
+  "acceptanceCriteria": [
+    "API fully documented with examples",
+    "New developers can onboard in < 1 day",
+    "All architecture decisions documented",
+    "Code style guide enforced",
+    "Integration examples working"
+  ]
+}

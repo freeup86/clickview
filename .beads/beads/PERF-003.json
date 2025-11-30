@@ -1,0 +1,32 @@
+{
+  "id": "PERF-003",
+  "title": "CDN and Static Asset Optimization",
+  "description": "Configure CDN for static assets, implement image optimization, and set up asset bundling for optimal load times.",
+  "status": "pending",
+  "priority": "medium",
+  "category": "performance",
+  "phase": 7,
+  "assignee": "frontend-team",
+  "dependencies": [],
+  "estimate": 16,
+  "tags": ["performance", "cdn", "assets"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Configure CloudFront or Cloudflare CDN",
+    "Set up asset versioning and cache busting",
+    "Implement image optimization pipeline",
+    "Configure compression (gzip/brotli)",
+    "Optimize JavaScript bundle sizes",
+    "Implement code splitting for routes",
+    "Add lazy loading for images",
+    "Configure long-term caching headers",
+    "Monitor CDN performance"
+  ],
+  "acceptanceCriteria": [
+    "Static assets served from CDN",
+    "Initial bundle size < 200KB gzipped",
+    "Images optimized and lazy-loaded",
+    "Lighthouse performance score > 90",
+    "TTFB < 200ms globally"
+  ]
+}

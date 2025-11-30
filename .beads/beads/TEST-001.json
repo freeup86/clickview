@@ -1,0 +1,33 @@
+{
+  "id": "TEST-001",
+  "title": "Achieve 70% Unit Test Coverage",
+  "description": "Implement comprehensive unit tests for all services, utilities, and components to achieve 70% code coverage.",
+  "status": "pending",
+  "priority": "high",
+  "category": "testing",
+  "phase": 6,
+  "assignee": "qa-team",
+  "dependencies": [],
+  "estimate": 40,
+  "tags": ["testing", "unit-tests", "coverage"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Set up coverage reporting with Istanbul/NYC",
+    "Write tests for authentication service",
+    "Write tests for authorization service",
+    "Write tests for report builder service",
+    "Write tests for NLQ service",
+    "Write tests for anomaly detection service",
+    "Write tests for all chart components",
+    "Write tests for utility functions",
+    "Write tests for state management",
+    "Configure CI to enforce coverage thresholds"
+  ],
+  "acceptanceCriteria": [
+    "Overall code coverage >= 70%",
+    "All critical paths have 90%+ coverage",
+    "No untested edge cases in security code",
+    "CI fails if coverage drops below threshold",
+    "Coverage reports generated on each PR"
+  ]
+}

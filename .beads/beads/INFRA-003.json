@@ -1,0 +1,32 @@
+{
+  "id": "INFRA-003",
+  "title": "Load Balancer and Auto-Scaling",
+  "description": "Configure production load balancer, implement auto-scaling policies, and ensure high availability architecture.",
+  "status": "pending",
+  "priority": "high",
+  "category": "infrastructure",
+  "phase": 8,
+  "assignee": "devops-team",
+  "dependencies": ["INFRA-001"],
+  "estimate": 20,
+  "tags": ["load-balancer", "auto-scaling", "high-availability"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Configure AWS ALB or NGINX load balancer",
+    "Set up health check endpoints",
+    "Configure SSL termination at load balancer",
+    "Implement sticky sessions for WebSocket",
+    "Set up auto-scaling groups",
+    "Define scaling policies (CPU, memory, requests)",
+    "Configure minimum/maximum instance counts",
+    "Test scaling under load",
+    "Document scaling procedures"
+  ],
+  "acceptanceCriteria": [
+    "Load balancer distributes traffic evenly",
+    "Auto-scaling responds to load in < 2 minutes",
+    "Zero-downtime deployments working",
+    "WebSocket connections stable across scaling",
+    "Cost-optimized scaling policies"
+  ]
+}

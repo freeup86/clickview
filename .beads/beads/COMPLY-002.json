@@ -1,0 +1,33 @@
+{
+  "id": "COMPLY-002",
+  "title": "SOC 2 Preparation",
+  "description": "Prepare for SOC 2 Type II certification including security controls, policies, and audit readiness.",
+  "status": "pending",
+  "priority": "medium",
+  "category": "compliance",
+  "phase": 9,
+  "assignee": "security-team",
+  "dependencies": ["COMPLY-001"],
+  "estimate": 40,
+  "tags": ["compliance", "soc2", "security"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Document all security controls",
+    "Create access control policies",
+    "Implement change management procedures",
+    "Document incident response plan",
+    "Create vendor management policy",
+    "Implement security awareness training",
+    "Set up continuous monitoring",
+    "Create audit evidence collection process",
+    "Perform gap analysis",
+    "Engage SOC 2 auditor"
+  ],
+  "acceptanceCriteria": [
+    "All SOC 2 controls documented",
+    "Evidence collection automated",
+    "Gap analysis complete",
+    "Audit readiness confirmed",
+    "Team trained on compliance"
+  ]
+}

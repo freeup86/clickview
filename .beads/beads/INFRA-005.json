@@ -1,0 +1,32 @@
+{
+  "id": "INFRA-005",
+  "title": "WAF and Security Infrastructure",
+  "description": "Configure Web Application Firewall, DDoS protection, and security monitoring for production environment.",
+  "status": "pending",
+  "priority": "high",
+  "category": "infrastructure",
+  "phase": 8,
+  "assignee": "security-team",
+  "dependencies": ["INFRA-003"],
+  "estimate": 16,
+  "tags": ["waf", "security", "ddos"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Configure AWS WAF or Cloudflare",
+    "Set up OWASP rule sets",
+    "Configure DDoS protection (AWS Shield)",
+    "Implement geo-blocking if needed",
+    "Set up bot detection and mitigation",
+    "Configure rate limiting at WAF level",
+    "Implement security monitoring alerts",
+    "Create security incident response plan",
+    "Test WAF rules don't block legitimate traffic"
+  ],
+  "acceptanceCriteria": [
+    "WAF blocking malicious requests",
+    "DDoS protection active",
+    "No false positives blocking users",
+    "Security alerts configured",
+    "Incident response plan documented"
+  ]
+}

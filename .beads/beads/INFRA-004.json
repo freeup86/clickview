@@ -1,0 +1,33 @@
+{
+  "id": "INFRA-004",
+  "title": "Infrastructure as Code",
+  "description": "Implement Terraform or CloudFormation for all infrastructure, enabling reproducible deployments and version control.",
+  "status": "pending",
+  "priority": "medium",
+  "category": "infrastructure",
+  "phase": 8,
+  "assignee": "devops-team",
+  "dependencies": ["INFRA-003"],
+  "estimate": 32,
+  "tags": ["terraform", "infrastructure", "iac"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Set up Terraform project structure",
+    "Define VPC and networking resources",
+    "Define database resources (RDS, ElastiCache)",
+    "Define compute resources (ECS/EKS)",
+    "Define load balancer and CDN",
+    "Implement secrets management (AWS Secrets Manager)",
+    "Create environments (dev, staging, prod)",
+    "Set up Terraform state management",
+    "Implement CI/CD for infrastructure",
+    "Document infrastructure architecture"
+  ],
+  "acceptanceCriteria": [
+    "All infrastructure defined in code",
+    "Environments reproducible from scratch",
+    "Infrastructure changes via PR review",
+    "State properly managed and locked",
+    "Documentation complete"
+  ]
+}

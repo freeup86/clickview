@@ -1,0 +1,32 @@
+{
+  "id": "PERF-004",
+  "title": "API Performance Tuning",
+  "description": "Optimize API performance through connection pooling, response compression, and request batching.",
+  "status": "pending",
+  "priority": "high",
+  "category": "performance",
+  "phase": 7,
+  "assignee": "backend-team",
+  "dependencies": ["PERF-001", "PERF-002"],
+  "estimate": 16,
+  "tags": ["performance", "api", "optimization"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Optimize connection pooling settings",
+    "Enable response compression middleware",
+    "Implement request batching for GraphQL",
+    "Add response pagination everywhere",
+    "Optimize serialization/deserialization",
+    "Implement partial response patterns",
+    "Add API response time monitoring",
+    "Configure keep-alive connections",
+    "Optimize rate limiting performance"
+  ],
+  "acceptanceCriteria": [
+    "API response time < 200ms (p95)",
+    "Throughput > 500 requests/second",
+    "GraphQL batch queries working",
+    "Response sizes minimized",
+    "Monitoring dashboard active"
+  ]
+}

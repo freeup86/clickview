@@ -1,0 +1,33 @@
+{
+  "id": "COMPLY-001",
+  "title": "GDPR Compliance Implementation",
+  "description": "Complete GDPR compliance including privacy policy, data export, right to deletion, and consent management.",
+  "status": "pending",
+  "priority": "high",
+  "category": "compliance",
+  "phase": 9,
+  "assignee": "legal-team",
+  "dependencies": [],
+  "estimate": 24,
+  "tags": ["compliance", "gdpr", "privacy"],
+  "created": "2025-11-30T00:00:00Z",
+  "tasks": [
+    "Create privacy policy",
+    "Implement cookie consent banner",
+    "Build user data export functionality",
+    "Implement right to deletion (RTBF)",
+    "Create data processing agreement template",
+    "Document data retention policies",
+    "Implement consent management",
+    "Create data breach notification procedure",
+    "Audit all third-party data processors",
+    "Train team on GDPR requirements"
+  ],
+  "acceptanceCriteria": [
+    "Privacy policy published and accessible",
+    "Cookie consent compliant with GDPR",
+    "Users can export all their data",
+    "Users can delete their account",
+    "Data retention policies enforced"
+  ]
+}
