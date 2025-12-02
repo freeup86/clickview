@@ -102,7 +102,7 @@ const Layout: React.FC = () => {
               const Icon = item.icon;
               const active = isActive(item.href);
               return (
-                <li key={item.name}>
+                <li key={item.name} className="mx-2">
                   <Link
                     to={item.href}
                     className={`sidebar-item ${active ? 'active' : ''}`}
